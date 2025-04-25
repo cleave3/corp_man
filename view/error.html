@@ -1,0 +1,17 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="title" content="Credit App - {{ title }}">
+    <link href="{{ url_for('static', path='/css/styles.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="content">
+        <div class="link-container">
+            <img src="{{ url_for('static', path='/svg/error.svg') }}" width="100" height="100" />
+        </div>
+        <p class="verification-message">{{ message }}</p>
+    </div>
+</body>
+</html>
