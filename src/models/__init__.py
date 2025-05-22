@@ -18,7 +18,7 @@ class AppModules(SQLModel, table=True):
     )
     is_active: bool = Field(sa_column=Column(pg.BOOLEAN, default=True))
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
-    update_at: datetime = Field(
+    updated_at: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, default=datetime.now, onupdate=datetime.now)
     )
 
@@ -35,7 +35,7 @@ class AppConfig(SQLModel, table=True):
     value: str = Field(sa_column=Column(pg.VARCHAR, nullable=False))
     description: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
-    update_at: datetime = Field(
+    updated_at: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, default=datetime.now, onupdate=datetime.now)
     )
 
@@ -48,6 +48,7 @@ class Auth(SQLModel, table=True):
     uid: uuid.UUID = Field(
         sa_column=Column(pg.UUID, nullable=False, primary_key=True, default=uuid.uuid4)
     )
+    business_id: uuid.UUID = Field(nullable=True, default=None)
     email: str = Field(
         sa_column=Column(pg.VARCHAR, nullable=True, unique=True, default=None)
     )
@@ -56,11 +57,12 @@ class Auth(SQLModel, table=True):
     )
     name: str = Field(sa_column=Column(pg.VARCHAR, nullable=True, default=None))
     user_type: UserTypeEnum = Field(
-        sa_column=Column(pg.VARCHAR, nullable=False, default=UserTypeEnum.root)
+        sa_column=Column(pg.VARCHAR, nullable=False, default=UserTypeEnum.root.value)
     )
     is_email_verified: bool = Field(
         sa_column=Column(pg.BOOLEAN, default=False, nullable=True)
     )
+    status: str = Field(sa_column=Column(pg.VARCHAR, nullable=True, server_default="active"))
     is_phone_verified: bool = Field(
         sa_column=Column(pg.BOOLEAN, default=False, nullable=True)
     )
@@ -68,11 +70,14 @@ class Auth(SQLModel, table=True):
         sa_column=Column(pg.BOOLEAN, default=False, nullable=True)
     )
     two_factor_option: TwoFactorEnum = Field(
-        sa_column=Column(pg.VARCHAR, nullable=False, default=TwoFactorEnum.none)
+        sa_column=Column(pg.VARCHAR, nullable=False, default=TwoFactorEnum.none.value)
     )
     has_password: bool = Field(default=False, nullable=True)
     password_hash: str = Field(
         sa_column=Column(pg.VARCHAR, nullable=True, default=None), exclude=True
+    )
+    last_login: datetime = Field(
+        sa_column=Column(pg.TIMESTAMP, nullable=True, default=None)
     )
 
     def __repr__(self):
@@ -89,7 +94,6 @@ class AuthMetaData(SQLModel, table=True):
     device_os: str = Field(sa_column=Column(pg.VARCHAR, nullable=False))
     device_browser: str = Field(sa_column=Column(pg.VARCHAR, nullable=False))
     timezone: str = Field(sa_column=Column(pg.VARCHAR, nullable=False))
-    user_agent: str = Field(sa_column=Column(pg.VARCHAR, nullable=False))
     login_time: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, nullable=False, default=datetime.now)
     )
@@ -115,7 +119,7 @@ class User(SQLModel, table=True):
     uid: uuid.UUID = Field(
         sa_column=Column(pg.UUID, nullable=False, primary_key=True, default=uuid.uuid4)
     )
-    business_id: str = Field(sa_column=Column(pg.VARCHAR, nullable=True, default=None))
+    business_id: uuid.UUID = Field(nullable=True, foreign_key="businesses.id")
     email: str = Field(
         sa_column=Column(pg.VARCHAR, nullable=True, unique=True, default=None)
     )
@@ -128,11 +132,9 @@ class User(SQLModel, table=True):
     permissions: List[str] = Field(
         sa_column=Column(pg.ARRAY(pg.VARCHAR), nullable=True, default=[])
     )
-    business: Optional["Business"] = Relationship(
-        sa_relationship_kwargs={"back_populates": "users"}
-    )
+    business: Optional["Business"] = Relationship(back_populates="users")
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
-    update_at: datetime = Field(
+    updated_at: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, default=datetime.now, onupdate=datetime.now)
     )
 
@@ -159,21 +161,17 @@ class Business(SQLModel, table=True):
         sa_column=Column(pg.ARRAY(pg.VARCHAR), nullable=True, default=[])
     )
     business_website: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
-    business_kyc_status: BusinessKYCStatusEnum = Field(
+    business_kyc_status: str = Field(
         sa_column=Column(
-            pg.VARCHAR, nullable=False, default=BusinessKYCStatusEnum.pending
+            pg.VARCHAR, nullable=False, default=BusinessKYCStatusEnum.pending.value
         )
     )
-    business_users: List["User"] = Relationship(
-        back_populates="business",
-        sa_relationship_kwargs={"lazy": "selectin"},
-    )
+    users: List["User"] = Relationship(back_populates="business")
     preferences: Optional["BusinessPreference"] = Relationship(
-        back_populates="business",
-        sa_relationship_kwargs={"lazy": "selectin"},
+        back_populates="business", sa_relationship_kwargs={"lazy": "selectin"}
     )
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
-    update_at: datetime = Field(
+    updated_at: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, default=datetime.now, onupdate=datetime.now)
     )
 
@@ -197,11 +195,9 @@ class BusinessPreference(SQLModel, table=True):
     require_two_factor: bool = Field(
         sa_column=Column(pg.BOOLEAN, nullable=False, default=False)
     )
-    business: Business = Relationship(
-        sa_relationship_kwargs={"back_populates": "preferences"}
-    )
+    business: Optional["Business"] = Relationship(back_populates="preferences")
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
-    update_at: datetime = Field(
+    updated_at: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, default=datetime.now, onupdate=datetime.now)
     )
 
@@ -235,16 +231,16 @@ class Customer(SQLModel, table=True):
     phone: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
     image_url: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
     address: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
-    payment_frequency: PaymentFrequencyEnum = Field(
+    payment_frequency: str = Field(
         sa_column=Column(
-            pg.VARCHAR, nullable=False, default=PaymentFrequencyEnum.monthly
+            pg.VARCHAR, nullable=False, default=PaymentFrequencyEnum.monthly.name
         )
     )
     next_payment_date: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, nullable=True, default=datetime.now)
     )
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
-    update_at: datetime = Field(
+    updated_at: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, default=datetime.now, onupdate=datetime.now)
     )
 
@@ -284,18 +280,24 @@ class Asset(SQLModel, table=True):
     warranty_expiry_date: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, nullable=True, default=None)
     )
-    asset_type: AssetTypeEnum = Field(
-        sa_column=Column(pg.VARCHAR, nullable=False, default=AssetTypeEnum.equipment)
+    asset_type: str = Field(
+        sa_column=Column(
+            pg.VARCHAR, nullable=False, default=AssetTypeEnum.equipment.value
+        )
     )
-    asset_condition: AssetConditionEnum = Field(
-        sa_column=Column(pg.VARCHAR, nullable=False, default=AssetConditionEnum.new)
+    asset_condition: str = Field(
+        sa_column=Column(
+            pg.VARCHAR, nullable=False, default=AssetConditionEnum.new.value
+        )
     )
-    asset_status: AssetStatusEnum = Field(
-        sa_column=Column(pg.VARCHAR, nullable=False, default=AssetStatusEnum.available)
+    asset_status: str = Field(
+        sa_column=Column(
+            pg.VARCHAR, nullable=False, default=AssetStatusEnum.available.value
+        )
     )
     asset_location: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
-    update_at: datetime = Field(
+    updated_at: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, default=datetime.now, onupdate=datetime.now)
     )
 
@@ -307,9 +309,11 @@ class TransactionTypeSetting(SQLModel, table=True):
     __tablename__ = "transaction_types_setting"
     id: int = Field(sa_column=Column(pg.INTEGER, primary_key=True, autoincrement=True))
     business_id: uuid.UUID = Field(default=None, foreign_key="businesses.id")
-    type: TransactionTypeEnum = Field(
+    type: str = Field(
         sa_column=Column(
-            pg.VARCHAR, nullable=False, default=TransactionTypeEnum.customer_deposit
+            pg.VARCHAR,
+            nullable=False,
+            default=TransactionTypeEnum.customer_deposit.value,
         )
     )
     requires_approval: bool = Field(
@@ -334,14 +338,16 @@ class Transaction(SQLModel, table=True):
     )
     business_id: uuid.UUID = Field(default=None, foreign_key="businesses.id")
     amount: float = Field(sa_column=Column(pg.FLOAT, nullable=False))
-    transaction_type: TransactionTypeEnum = Field(
+    transaction_type: str = Field(
         sa_column=Column(
-            pg.VARCHAR, nullable=False, default=TransactionTypeEnum.customer_deposit
+            pg.VARCHAR,
+            nullable=False,
+            default=TransactionTypeEnum.customer_deposit.value,
         )
     )
-    status: TransactionStatusEnum = Field(
+    status: str = Field(
         sa_column=Column(
-            pg.VARCHAR, nullable=False, default=TransactionStatusEnum.pending
+            pg.VARCHAR, nullable=False, default=TransactionStatusEnum.pending.value
         )
     )
     description: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
@@ -382,3 +388,19 @@ class TransactionApproval(SQLModel, table=True):
 
     def __repr__(self):
         return f"<TransactionApproval {self.id}>"
+
+
+class Config(SQLModel, table=True):
+    __tablename__ = "configs"
+    id: uuid.UUID = Field(
+        sa_column=Column(pg.UUID, primary_key=True, nullable=False, default=uuid.uuid4)
+    )
+    subscription_settings: dict = Field(
+        sa_column=Column(pg.JSON, nullable=True, default=None)
+    )
+    support_email: str = Field(default=None, nullable=None)
+    support_phone: str = Field(default=None, nullable=None)
+    created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
+    updated_at: datetime = Field(
+        sa_column=Column(pg.TIMESTAMP, default=datetime.now, onupdate=datetime.now)
+    )

@@ -31,7 +31,7 @@ def create_access_token(data: dict, refresh: bool = False, isTemp: bool = False)
             "exp": expiry,
             "user": data,
             "jti": str(generate_uuid()),
-            "session_id": data.get("session_id"),
+            # "session_id": data.get("session_id"),
             "refresh": refresh,
             "isTemp": isTemp,
         },

@@ -13,6 +13,7 @@ def register_middleware(app: FastAPI):
 
     @app.middleware("http")
     async def custom_logging(request: Request, call_next):
+
         start_time = time.time()
 
         response = await call_next(request)
@@ -26,7 +27,7 @@ def register_middleware(app: FastAPI):
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=["*"], # "http://localhost:3000"
         allow_methods=["*"],
         allow_headers=["*"],
         allow_credentials=True,
@@ -41,3 +42,14 @@ def register_middleware(app: FastAPI):
             "0.0.0.0",
         ],
     )
+
+    @app.middleware("http")
+    async def error_logging_middleware(request: Request, call_next):
+        try:
+            return await call_next(request)
+        except Exception as e:
+            with open("error.log", "a") as error_file:
+                timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+                error_message = f"[{timestamp}] Error: {str(e)} - Path: {request.url.path} - Method: {request.method}\n"
+                error_file.write(error_message)
+            raise

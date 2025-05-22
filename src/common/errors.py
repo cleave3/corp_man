@@ -1,8 +1,9 @@
-from typing import Any, Callable
+from typing import Callable
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from fastapi import FastAPI, status
 from sqlalchemy.exc import SQLAlchemyError
+from fastapi.exceptions import RequestValidationError
 
 
 class CreditActionAppException(Exception):
@@ -15,6 +16,7 @@ class PasswordAlreadySet(CreditActionAppException):
     """User has already set a password"""
 
     pass
+
 
 class InvalidToken(CreditActionAppException):
     """User has provided an invalid or expired token"""
@@ -46,6 +48,12 @@ class UserAlreadyExists(CreditActionAppException):
     pass
 
 
+class UserPhoneAlreadyExists(CreditActionAppException):
+    """User has provided an phone for a user who exists during sign up."""
+
+    pass
+
+
 class InvalidCredentials(CreditActionAppException):
     """User has provided wrong email or password during log in."""
 
@@ -57,8 +65,15 @@ class InsufficientPermission(CreditActionAppException):
 
     pass
 
+
 class UserNotFound(CreditActionAppException):
     """User Not found"""
+
+    pass
+
+
+class UserSubscriptionNotFound(CreditActionAppException):
+    """UserSubscription Not found"""
 
     pass
 
@@ -68,10 +83,12 @@ class UserAlreadyVerified(CreditActionAppException):
 
     pass
 
+
 class AccountNotVerified(Exception):
     """Account not yet verified"""
 
     pass
+
 
 class RecommendationGenerationFailed(Exception):
     """Failed to generate recommendation"""
@@ -85,13 +102,49 @@ class InternalServerError(Exception):
     pass
 
 
+class FreemiumException(Exception):
+    """This is the base class for unsubscribed users errors"""
+
+    pass
+
+
+class AcceptTermsException(Exception):
+    """This is the base class for when terms and condition is not yet accepted errors"""
+
+    pass
+
+
+class ActionNotAllowed(Exception):
+    """Action not allowed"""
+
+    pass
+
+
+class InvalidPassword(CreditActionAppException):
+    """User current password doesn't match."""
+
+    pass
+
+class AccountRestricted(CreditActionAppException):
+    pass
+
+
 def create_exception_handler(
-    status_code: int, initial_detail: Any
+    status_code: int, message: str
 ) -> Callable[[Request, Exception], JSONResponse]:
 
     async def exception_handler(request: Request, exc: CreditActionAppException):
 
-        return JSONResponse(content=initial_detail, status_code=status_code)
+        return JSONResponse(
+            content={
+                "status": False,
+                "code": status_code,
+                "message": message,
+                "data": None,
+                "error": str(exc),
+            },
+            status_code=status_code,
+        )
 
     return exception_handler
 
@@ -100,13 +153,15 @@ def register_all_errors(app: FastAPI):
     app.add_exception_handler(
         UserAlreadyExists,
         create_exception_handler(
-            status_code=status.HTTP_403_FORBIDDEN,
-            initial_detail={
-                "status": False,
-                "code": status.HTTP_403_FORBIDDEN,
-                "message": "User with email already exists",
-                "data": None,
-            },
+            status_code=status.HTTP_409_CONFLICT,
+            message="email already exists",
+        ),
+    )
+    app.add_exception_handler(
+        UserPhoneAlreadyExists,
+        create_exception_handler(
+            status_code=status.HTTP_409_CONFLICT,
+            message="phone already exists",
         ),
     )
 
@@ -114,12 +169,15 @@ def register_all_errors(app: FastAPI):
         UserNotFound,
         create_exception_handler(
             status_code=status.HTTP_404_NOT_FOUND,
-            initial_detail={
-                "status": False,
-                "code": status.HTTP_404_NOT_FOUND,
-                "message": "User not found",
-                "data": None,
-            },
+            message="User not found",
+        ),
+    )
+
+    app.add_exception_handler(
+        UserSubscriptionNotFound,
+        create_exception_handler(
+            status_code=status.HTTP_404_NOT_FOUND,
+            message="subscription not found",
         ),
     )
 
@@ -127,72 +185,42 @@ def register_all_errors(app: FastAPI):
         InvalidCredentials,
         create_exception_handler(
             status_code=status.HTTP_400_BAD_REQUEST,
-            initial_detail={
-                "status": False,
-                "code": status.HTTP_400_BAD_REQUEST,
-                "message": "Invalid Email Or Password",
-                "data": None,
-            },
+            message="Invalid Email Or Password",
         ),
     )
     app.add_exception_handler(
         InvalidToken,
         create_exception_handler(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            initial_detail={
-                "status": False,
-                "code": status.HTTP_401_UNAUTHORIZED,
-                "message": "Token is invalid Or expired",
-                "data": None,
-            },
+            message="Token is invalid Or expired",
         ),
     )
     app.add_exception_handler(
         RevokedToken,
         create_exception_handler(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            initial_detail={
-                "status": False,
-                "code": status.HTTP_401_UNAUTHORIZED,
-                "message": "Token is invalid or has been revoked",
-                "data": None,
-            },
+            message="Token is invalid or has been revoked",
         ),
     )
     app.add_exception_handler(
         AccessTokenRequired,
         create_exception_handler(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            initial_detail={
-                "status": False,
-                "code": status.HTTP_401_UNAUTHORIZED,
-                "message": "Please provide a valid access token",
-                "data": None,
-            },
+            message="Please provide a valid access token",
         ),
     )
     app.add_exception_handler(
         RefreshTokenRequired,
         create_exception_handler(
             status_code=status.HTTP_403_FORBIDDEN,
-            initial_detail={
-                "status": False,
-                "code": status.HTTP_403_FORBIDDEN,
-                "message": "Please provide a valid refresh token",
-                "data": None,
-            },
+            message="Please provide a valid refresh token",
         ),
     )
     app.add_exception_handler(
         InsufficientPermission,
         create_exception_handler(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            initial_detail={
-                "status": False,
-                "code": status.HTTP_401_UNAUTHORIZED,
-                "message": "You do not have enough permissions to perform this action",
-                "data": None,
-            },
+            message="You do not have enough permissions to perform this action",
         ),
     )
 
@@ -200,12 +228,7 @@ def register_all_errors(app: FastAPI):
         AccountNotVerified,
         create_exception_handler(
             status_code=status.HTTP_403_FORBIDDEN,
-            initial_detail={
-                "status": False,
-                "code": status.HTTP_403_FORBIDDEN,
-                "message": "Account Not verified",
-                "data": None,
-            },
+            message="Account Not verified. Please verify you email to continue",
         ),
     )
 
@@ -213,12 +236,7 @@ def register_all_errors(app: FastAPI):
         UserAlreadyVerified,
         create_exception_handler(
             status_code=status.HTTP_409_CONFLICT,
-            initial_detail={
-                "status": False,
-                "code": status.HTTP_409_CONFLICT,
-                "message": "User already verified",
-                "data": None,
-            },
+            message="User already verified",
         ),
     )
 
@@ -226,12 +244,7 @@ def register_all_errors(app: FastAPI):
         PasswordAlreadySet,
         create_exception_handler(
             status_code=status.HTTP_409_CONFLICT,
-            initial_detail={
-                "status": False,
-                "code": status.HTTP_409_CONFLICT,
-                "message": "Password already set",
-                "data": None,
-            },
+            message="Password already set",
         ),
     )
 
@@ -239,39 +252,62 @@ def register_all_errors(app: FastAPI):
         RecommendationGenerationFailed,
         create_exception_handler(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            initial_detail={
-                "status": False,
-                "code": status.HTTP_500_INTERNAL_SERVER_ERROR,
-                "message": "Error generating recommendations",
-                "data": None,
-            },
+            message="Error generating recommendations",
         ),
     )
-
-    # @app.exception_handler(status.HTTP_500_INTERNAL_SERVER_ERROR)
-    # async def internal_server_error(request, exc):
-
-    #     return JSONResponse(
-    #         content={
-    #             "status": False,
-    #             "code": status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #             "message": "Oops! Something went wrong",
-    # "data": None,
-    #
-    #         },
-    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #     )
-
-    # @app.exception_handler(SQLAlchemyError)
-    # async def database__error(request, exc):
-    #     print(str(exc))
-    #     return JSONResponse(
-    #         content={
-    #             "status": False,
-    #             "code": status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #             "message": "Oops! Something went wrong",
-    # "data": None,
-    #
-    #         },
-    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #     )
+    app.add_exception_handler(
+        status.HTTP_500_INTERNAL_SERVER_ERROR,
+        create_exception_handler(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            message="Oops! Something went wrong [SERVER]",
+        ),
+    )
+    app.add_exception_handler(
+        SQLAlchemyError,
+        create_exception_handler(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            message="Oops! Something went wrong [DB]",
+        ),
+    )
+    app.add_exception_handler(
+        RequestValidationError,
+        create_exception_handler(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            message="validation errors",
+        ),
+    )
+    app.add_exception_handler(
+        FreemiumException,
+        create_exception_handler(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            message="Please upgrade to a premium plan to access this feature",
+        ),
+    )
+    app.add_exception_handler(
+        AcceptTermsException,
+        create_exception_handler(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            message="Please accept terms of use before proceeding",
+        ),
+    )
+    app.add_exception_handler(
+        InvalidPassword,
+        create_exception_handler(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            message="Your current password doesn't match",
+        ),
+    )
+    app.add_exception_handler(
+        ActionNotAllowed,
+        create_exception_handler(
+            status_code=status.HTTP_403_FORBIDDEN,
+            message="Action not allowed",
+        ),
+    )
+    app.add_exception_handler(
+        AccountRestricted,
+        create_exception_handler(
+            status_code=status.HTTP_403_FORBIDDEN,
+            message="Account has been restricted or blocked",
+        ),
+    )

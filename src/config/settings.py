@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     MAIL_SENDER_NAME: str
     MAIL_SENDER_EMAIL: str
     FRONTEND_URL: str
+    SMS_LIVE_247_KEY: str
+    APP_MODE: str = "development"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

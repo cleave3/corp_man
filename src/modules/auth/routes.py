@@ -5,439 +5,323 @@ from fastapi import (
     status,
     BackgroundTasks,
     templating,
+    HTTPException,
 )
-from fastapi.responses import JSONResponse
-
+from src.common.notification import NotificationService
 from src.common.utilities import generate_random_numbers, response
-from src.config import RedisService
-from src.firebase import verify_id_token
 from .schemas import (
-    CreatePasswordModel,
+    ChangePasswordModel,
     EmailVerificationModel,
     LoginResponseModel,
     PasswordResetConfirmModel,
     PasswordResetRequestModel,
-    PhoneVerificationModel,
     ResendVerificationCodeModel,
-    SendPhoneVerificationCodeModel,
     SocioAuthModel,
-    SocioUserCreateModel,
     UserCreateModel,
     UserLoginModel,
+    ChannelEnum,
+    UpdatePermissionModel,
+    UpdateStatusModel,
 )
-from .service import AuthService
-from src.config import get_session
-from sqlalchemy.ext.asyncio import AsyncSession
+from .service import AuthService, get_auth_service
 from .utils import (
     create_access_token,
     decode_access_token,
-    generate_uuid,
-    verify_password,
-    get_password_hash,
 )
-from .dependencies import RefreshTokenBearer, AcessTokenBearer, get_current_user
-from src.common.errors import (
-    InvalidCredentials,
-    PasswordAlreadySet,
-    UserAlreadyExists,
-    InvalidToken,
-    UserAlreadyVerified,
-    UserNotFound,
+from src.middleware.dependencies import (
+    RefreshTokenBearer,
+    AcessTokenBearer,
+    PermissionChecker,
 )
+from src.common.errors import UserNotFound, ActionNotAllowed
+from src.common.permissions import user_permission_actions
 from src.config.settings import Config
-from src.common.mail import sendMail, MailData
+from src.common.notification import MailData
 
 
 auth_router = APIRouter()
-user_service = AuthService()
-redis_service = RedisService()
 templates = templating.Jinja2Templates(directory="view")
 
 
-@auth_router.post("/signup", status_code=status.HTTP_201_CREATED)
-async def create_user_account(
+@auth_router.post("/register-member", status_code=status.HTTP_201_CREATED)
+async def register_team_member(
     user_data: UserCreateModel,
-    bg_task: BackgroundTasks,
-    session: AsyncSession = Depends(get_session),
+    token_data: dict = Depends(
+        PermissionChecker(allowed_permissions=[user_permission_actions["create_user"]])
+    ),
+    auth_service: AuthService = Depends(get_auth_service),
 ):
-    email = user_data.email
 
-    user_exists = await user_service.user_exists(email, session)
-
-    if user_exists:
-        raise UserAlreadyExists()
-
-    new_user = await user_service.create_user(user_data, session)
-
-    code = generate_random_numbers(6)
-
-    await user_service.upsert_verification_token(
-        identifier=email, code=code, session=session
+    member = await auth_service.create_user(
+        user_data=user_data, business_id=token_data["user"]["bid"]
     )
 
-    html = f"""
-        <h1>Verify your Email</h1>
-        <p>Please use the token below to verify your email</p>
-        <p style="text-align: center; font-weight: bold;">{code}</p>
-    """
-
-    bg_task.add_task(
-        sendMail, MailData(recipients=[email], subject="Welcome", message=html)
-    )
-    # sendMail(MailData(recipients=[email], subject="Welcome", message=html))
-
-    return response(
-        code=status.HTTP_201_CREATED,
-        status=True,
-        message="Signup successful, Please check your email to verify your account",
-        data=new_user,
-    )
+    return response(data=member, message="Member add successfully")
 
 
-@auth_router.post(
-    "/resend-verification",
-    status_code=status.HTTP_201_CREATED,
+@auth_router.patch(
+    "/update-status/{user_id}",
+    status_code=status.HTTP_200_OK,
 )
-async def resend_email_verification_code(
-    data: ResendVerificationCodeModel,
-    bg_task: BackgroundTasks,
-    session: AsyncSession = Depends(get_session),
+async def update_member_status(
+    user_id: str,
+    user_data: UpdateStatusModel,
+    user=Depends(
+        PermissionChecker(allowed_permissions=[user_permission_actions["update_user"]])
+    ),
+    auth_service: AuthService = Depends(get_auth_service),
 ):
-    email = data.email
-    user_exists = await user_service.user_exists(email, session)
 
-    if not user_exists:
+    if user_id == user.uid:
+        raise ActionNotAllowed()
+
+    auth = await auth_service.get_user_by_id(uid=user_id)
+
+    if not auth:
         raise UserNotFound()
 
-    code = generate_random_numbers(6)
+    await auth_service.update_auth(auth=auth, auth_data=user_data.model_dump())
 
-    await user_service.upsert_verification_token(
-        identifier=email, code=code, session=session
-    )
-
-    html = f"""
-        <h1>Verify your Email</h1>
-        <p>Please use the token below to verify your email</p>
-        <p style="text-align: center; font-weight: bold;">{code}</p>
-    """
-
-    bg_task.add_task(
-        sendMail, MailData(recipients=[email], subject="Verification", message=html)
-    )
-    # sendMail(MailData(recipients=[email], subject="Welcome", message=html))
-
-    return response(
-        code=status.HTTP_200_OK,
-        status=True,
-        message="Please check your email to verify your account",
-    )
+    return response(message="status updated successfully")
 
 
-@auth_router.post("/verify-email", status_code=status.HTTP_200_OK)
-async def verify_user_account(
-    data: EmailVerificationModel, session: AsyncSession = Depends(get_session)
+@auth_router.patch(
+    "/update-permissions/{user_id}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[
+        Depends(
+            PermissionChecker(
+                allowed_permissions=[user_permission_actions["update_user"]]
+            )
+        )
+    ],
+)
+async def update_member_permissions(
+    user_id: str,
+    user_data: UpdatePermissionModel,
+    auth_service: AuthService = Depends(get_auth_service),
 ):
 
-    user_email = data.email
-
-    user = await user_service.get_user_by_email(email=user_email, session=session)
+    user = await auth_service.get_profile_by_uid(uid=user_id)
 
     if not user:
         raise UserNotFound()
 
-    if user.is_email_verified:
-        raise UserAlreadyVerified()
+    await auth_service.update_user(user=user, user_data=user_data.model_dump())
 
-    if not await user_service.is_verification_token_valid(
-        identifier=user_email, code=data.code, session=session
-    ):
-        raise InvalidToken()
+    return response(message="permissions updated successfully")
 
-    await user_service.update_user(
-        user=user, user_data={"is_email_verified": True}, session=session
-    )
 
-    access_token = create_access_token(
-        data={"email": user_email, "uid": str(user.uid), "role": user.role}
-    )
+@auth_router.get(
+    "/users",
+    status_code=status.HTTP_200_OK,
+)
+async def get_users_by_business(
+    user=Depends(
+        PermissionChecker(allowed_permissions=[user_permission_actions["view_users"]])
+    ),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    users = await auth_service.get_users_by_business_id(business_id=user.business_id)
 
-    refresh_token = create_access_token(
-        data={"email": user_email, "uid": str(user.uid), "role": user.role},
-        refresh=True,
-    )
+    return response(data=users)
+
+
+@auth_router.get(
+    "/user/{user_id}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[
+        Depends(
+            PermissionChecker(
+                allowed_permissions=[user_permission_actions["view_users"]]
+            )
+        )
+    ],
+)
+async def get_user_by_id(
+    user_id: str,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    user = await auth_service.get_profile_by_uid(uid=user_id)
+
+    auth = await auth_service.get_user_by_id(uid=user_id)
+
+    return response(data={"user": user, "auth": auth})
+
+
+@auth_router.post("/verify-email", status_code=status.HTTP_200_OK)
+async def verify_user_account(
+    data: EmailVerificationModel,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+
+    result = await auth_service.verify_user_account(data=data)
 
     return response(
         status=True,
         code=status.HTTP_200_OK,
         message="Email verified successfully",
-        data={"access_token": access_token, "refresh_token": refresh_token},
+        data=result,
     )
 
 
 @auth_router.post(
-    "/send-phone-verification-code",
+    "/resend-verification-code",
     status_code=status.HTTP_201_CREATED,
 )
-async def send_phone_verification_code(
-    data: SendPhoneVerificationCodeModel,
+async def resend_verification_code(
+    data: ResendVerificationCodeModel,
     bg_task: BackgroundTasks,
-    session: AsyncSession = Depends(get_session),
+    auth_service: AuthService = Depends(get_auth_service),
 ):
-    phone = data.phone
-    user_exists = await user_service.get_user_by_phone(phone, session)
+    email = data.email
+
+    user_exists = await auth_service.user_exists(email)
 
     if not user_exists:
         raise UserNotFound()
 
     code = generate_random_numbers(6)
+    telephone = user_exists.phone
 
-    await user_service.upsert_verification_token(
-        identifier=phone, code=code, session=session
-    )
+    identifier = email if data.channel is ChannelEnum.email else telephone
 
-    # send sms code here
+    if not identifier:
+        raise HTTPException(
+            detail={
+                "status": False,
+                "code": status.HTTP_204_NO_CONTENT,
+                "message": f"{ChannelEnum.email} is not available",
+                "data": None,
+            }
+        )
+
+    await auth_service.upsert_verification_token(identifier=identifier, code=code)
+
+    if data.channel == ChannelEnum.email:
+        html = f"""
+            <h1>Verify your Email</h1>
+            <p>Please use the token below to verify your email</p>
+            <p style="text-align: center; font-weight: bold;">{code}</p>
+        """
+
+        bg_task.add_task(
+            NotificationService.send_email,
+            MailData(recipients=[email], subject="Verification", message=html),
+        )
+    else:
+        """send sms"""
+        bg_task.add_task(
+            NotificationService.send_sms,
+            recipient=telephone,
+            message=f"Your verification code is {code}",
+        )
 
     return response(
         code=status.HTTP_200_OK,
         status=True,
-        message="Please check your sms for verification code",
-    )
-
-
-@auth_router.post("/verify-phone", status_code=status.HTTP_200_OK)
-async def verify_user_account(
-    data: PhoneVerificationModel, session: AsyncSession = Depends(get_session)
-):
-
-    user_phone = data.phone
-
-    user = await user_service.get_user_by_phone(phone=user_phone, session=session)
-
-    if not user:
-        raise UserNotFound()
-
-    if user.is_phone_verified:
-        raise UserAlreadyVerified()
-
-    if not await user_service.is_verification_token_valid(
-        identifier=user_phone, code=data.code, session=session
-    ):
-        raise InvalidToken()
-
-    await user_service.update_user(
-        user=user, user_data={"is_phone_verified": True}, session=session
-    )
-
-    access_token = create_access_token(
-        data={"email": user.email, "uid": str(user.uid), "role": user.role}
-    )
-
-    refresh_token = create_access_token(
-        data={"email": user.email, "uid": str(user.uid), "role": user.role},
-        refresh=True,
-    )
-
-    return response(
-        status=True,
-        code=status.HTTP_200_OK,
-        message="Phone number verified successfully",
-        data={"access_token": access_token, "refresh_token": refresh_token},
-    )
-
-
-@auth_router.post("/set-password", status_code=status.HTTP_200_OK)
-async def set_user_password(
-    data: CreatePasswordModel,
-    token_data: dict = Depends(AcessTokenBearer()),
-    session: AsyncSession = Depends(get_session),
-):
-    new_password = data.password
-
-    user_email = token_data["user"]["email"]
-
-    user = await user_service.get_user_by_email(user_email, session=session)
-
-    if not user:
-        raise UserNotFound()
-
-    if user.has_password:
-        raise PasswordAlreadySet()
-
-    passwd_hash = get_password_hash(new_password)
-
-    await user_service.update_user(
-        user, {"password_hash": passwd_hash, "has_password": True}, session=session
-    )
-
-    return response(
-        status=True, code=status.HTTP_200_OK, message="Password set Successfully"
+        message=f"Please check your {data.channel.value} for your verification code",
     )
 
 
 @auth_router.post(
-    "/login", status_code=status.HTTP_200_OK, response_model=LoginResponseModel
+    "/login-user", status_code=status.HTTP_200_OK, response_model=LoginResponseModel
 )
-async def login(
-    user_data: UserLoginModel, session: AsyncSession = Depends(get_session)
+async def login_user(
+    auth_data: UserLoginModel,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    email = auth_data.email
+    password = auth_data.password
+
+    result = await auth_service.login(
+        auth_data={"email": email, "password": password, "user_type": ["user", "root"]},
+    )
+
+    return response(message="Login successful", data=result)
+
+
+@auth_router.post(
+    "/login-admin", status_code=status.HTTP_200_OK, response_model=LoginResponseModel
+)
+async def login_admin(
+    user_data: UserLoginModel,
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     email = user_data.email
     password = user_data.password
 
-    user = await user_service.get_user_by_email(email, session)
-
-    if user is None:
-        raise InvalidCredentials()
-
-    if not user.has_password:
-        raise InvalidCredentials()
-
-    if not verify_password(password, user.password_hash):
-        raise InvalidCredentials()
-
-    updated_user = await user_service.update_user(
-        user=user, user_data={"current_session_id": generate_uuid()}, session=session
-    )
-
-    access_token = create_access_token(
-        data={
+    result = await auth_service.login(
+        user_data={
             "email": email,
-            "uid": str(user.uid),
-            "role": user.role,
-            "session_id": str(updated_user.current_session_id),
-        }
-    )
-
-    refresh_token = create_access_token(
-        data={"email": email, "uid": str(user.uid), "role": user.role}, refresh=True
-    )
-
-    return response(
-        message="Login successful",
-        data={
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "user": {
-                "uid": str(user.uid),
-                "email": email,
-            },
+            "password": password,
+            "user_type": ["admin"],
         },
     )
+
+    return response(message="Login successful", data=result)
 
 
 @auth_router.post("/socio-auth", status_code=status.HTTP_200_OK)
 async def socio_authentication(
-    data: SocioAuthModel, session: AsyncSession = Depends(get_session)
+    data: SocioAuthModel,
+    auth_service: AuthService = Depends(get_auth_service),
 ):
-    email = data.email
-    id_token = data.id_token
+    result = await auth_service.socio_authentication(data=data)
 
-    user = await user_service.get_user_by_email(email, session)
-
-    if user is not None:
-        socio_user = verify_id_token(id_token=id_token)
-
-        if socio_user.is_valid:
-
-            access_token = create_access_token(
-                data={
-                    "email": email,
-                    "uid": str(user.uid),
-                    "role": user.role,
-                    "session_id": str(user.current_session_id),
-                }
-            )
-
-            refresh_token = create_access_token(
-                data={"email": email, "uid": str(user.uid), "role": user.role},
-                refresh=True,
-            )
-
-            return response(
-                message="Login successful",
-                data={
-                    "access_token": access_token,
-                    "refresh_token": refresh_token,
-                    "user": {
-                        "uid": str(user.uid),
-                        "email": email,
-                    },
-                },
-            )
-        else:
-            return response(message=socio_user.error, code=status.HTTP_403_FORBIDDEN)
-
-    else:
-        socio_user = verify_id_token(id_token=id_token, return_detail=True)
-
-        if socio_user.is_valid:
-
-            new_user = await user_service.create_socio_user(
-                user_data=SocioUserCreateModel(email=email, name=socio_user.name),
-                session=session,
-            )
-
-            access_token = create_access_token(
-                data={
-                    "email": email,
-                    "uid": str(new_user.uid),
-                    "role": new_user.role,
-                    "session_id": str(new_user.current_session_id),
-                }
-            )
-
-            refresh_token = create_access_token(
-                data={"email": email, "uid": str(new_user.uid), "role": new_user.role},
-                refresh=True,
-            )
-
-            return response(
-                message="Login successful",
-                data={
-                    "access_token": access_token,
-                    "refresh_token": refresh_token,
-                    "user": {
-                        "uid": str(new_user.uid),
-                        "email": email,
-                    },
-                },
-            )
-        else:
-            return response(message=socio_user.error, code=status.HTTP_403_FORBIDDEN)
+    return response(**result)
 
 
 @auth_router.get("/refresh-token", status_code=status.HTTP_200_OK)
 async def refresh_token(
     token_data: dict = Depends(RefreshTokenBearer()),
-    session: AsyncSession = Depends(get_session),
+    auth_service: AuthService = Depends(get_auth_service),
 ):
+    result = await auth_service.refresh_token(token_data=token_data)
 
-    if token_data is None:
-        raise InvalidToken()
-
-    user = await user_service.get_user_by_email(token_data["user"]["email"], session)
-
-    if user is None:
-        raise InvalidToken()
-
-    access_token = create_access_token(data=token_data["user"], refresh=False)
-
-    return JSONResponse(
-        content={"access_token": access_token},
-        status_code=status.HTTP_200_OK,
-    )
+    return response(data=result)
 
 
 @auth_router.get("/me", status_code=status.HTTP_200_OK)
-async def get_current_user(user: dict = Depends(get_current_user)):
+async def get_current_user(
+    token_data: dict = Depends(AcessTokenBearer()),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    print(token_data)
+    user = await auth_service.get_profile_by_uid(uid=token_data["user"]["uid"])
 
     return response(data=user)
 
 
+@auth_router.patch("/change-password")
+async def change_password(
+    data: ChangePasswordModel,
+    token_data: dict = Depends(AcessTokenBearer()),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    result = await auth_service.change_password(
+        user_data={
+            "uid": token_data["user"]["uid"],
+            "current_password": data.current_password,
+            "new_password": data.new_password,
+        }
+    )
+
+    return response(message=result)
+
+
 @auth_router.post("/forgot-password")
 async def forgot_password(
-    email_data: PasswordResetRequestModel, bg_task: BackgroundTasks
+    email_data: PasswordResetRequestModel,
+    bg_task: BackgroundTasks,
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     email = email_data.email
+
+    user = await auth_service.get_user_by_email(email=email)
+
+    if user is None:
+        raise UserNotFound()
 
     temp_token = create_access_token(data={"email": email}, isTemp=True)
 
@@ -450,7 +334,7 @@ async def forgot_password(
     """
 
     bg_task.add_task(
-        sendMail,
+        NotificationService.send_email,
         MailData(recipients=[email], subject="Reset Your Password", message=html),
     )
 
@@ -459,8 +343,12 @@ async def forgot_password(
     )
 
 
-@auth_router.get("/password-reset-confirm/{token}")
-async def reset_password_form(request: Request, token: str):
+@auth_router.get("/password-reset-confirm/{token}", include_in_schema=False)
+async def reset_password_form(
+    request: Request,
+    token: str,
+    auth_service: AuthService = Depends(get_auth_service),
+):
     token_data = decode_access_token(token)
 
     if not token_data:
@@ -468,7 +356,7 @@ async def reset_password_form(request: Request, token: str):
             "error.html", {"request": request, "message": "Invalid or Expired Link"}
         )
 
-    in_blocklist = redis_service.token_in_blocklist(token_data["jti"])
+    in_blocklist = auth_service.token_in_blocklist(token_data["jti"])
 
     if in_blocklist:
         return templates.TemplateResponse(
@@ -487,69 +375,30 @@ async def reset_password_form(request: Request, token: str):
     )
 
 
-@auth_router.get("/reset-success")
+@auth_router.post("/password-reset-confirm/{token}", include_in_schema=False)
+async def reset_account_password(
+    token: str,
+    passwords: PasswordResetConfirmModel,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+
+    result = await auth_service.reset_account_password(token=token, passwords=passwords)
+
+    return response(**result)
+
+
+@auth_router.get("/reset-success", include_in_schema=False)
 async def reset_password_result(request: Request):
     return templates.TemplateResponse("success.html", {"request": request})
 
 
-@auth_router.post("/password-reset-confirm/{token}")
-async def reset_account_password(
-    token: str,
-    passwords: PasswordResetConfirmModel,
-    session: AsyncSession = Depends(get_session),
-):
-    token_data = decode_access_token(token)
-
-    new_password = passwords.new_password
-
-    if not token_data:
-        raise InvalidToken()
-
-    if not token_data["isTemp"]:
-        raise InvalidToken()
-
-    in_blocklist = redis_service.token_in_blocklist(token_data["jti"])
-
-    if in_blocklist:
-        return response(
-            code=status.HTTP_400_BAD_REQUEST,
-            status=False,
-            message="Invalid or Expired Link",
-        )
-
-    user_email = token_data["user"]["email"]
-
-    if user_email:
-        user = await user_service.get_user_by_email(user_email, session)
-
-        if not user:
-            raise UserNotFound()
-
-        if verify_password(new_password, user.password_hash):
-            return response(
-                code=status.HTTP_400_BAD_REQUEST,
-                status=False,
-                message="You cannot use your old password",
-            )
-
-        passwd_hash = get_password_hash(new_password)
-
-        await user_service.update_user(user, {"password_hash": passwd_hash}, session)
-
-        redis_service.add_jti_to_block_list(token_data["jti"])
-
-        return response(message="Password reset Successfully")
-
-    return response(
-        code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        status=False,
-        message="Error occured during password reset.",
-    )
-
-
 @auth_router.get("/logout", status_code=status.HTTP_200_OK)
-async def logout(token_data: dict = Depends(AcessTokenBearer())):
-    redis_service.add_jti_to_block_list(token_data["jti"])
-    redis_service.remove_store_value_if_exist(token_data["session_id"])
+async def logout(
+    token_data: dict = Depends(AcessTokenBearer()),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    auth_service.add_jti_to_block_list(token_data["jti"])
+
+    await auth_service.logout_user(user_uid=token_data["user"]["uid"])
 
     return response(message="Logout successful")
