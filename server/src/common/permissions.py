@@ -64,6 +64,7 @@ user_permission_actions = {
     "update_business_preferences": "business.update_preferences",
     "view_transactions": "transaction.view",
     "initiate_transaction": "transaction.initiate",
+    "modify_transaction": "transaction.modify",
     "approve_transaction": "transaction.approve",
     "view_settings": "settings.view",
     "modify_settings": "settings.modify",
@@ -146,6 +147,10 @@ user_permission_list = {
             "name": "Approve transactions",
             "action": user_permission_actions["approve_transaction"],
         },
+        {
+            "name": "Modify transactions",
+            "action": user_permission_actions["modify_transaction"],
+        },
     ],
     "user": [
         {"name": "update user", "action": user_permission_actions["update_user"]},
@@ -179,4 +184,5 @@ root_user_permissions = [
     "transaction.approve",
     "settings.view",
     "settings.modify",
+    "transaction.modify",
 ]

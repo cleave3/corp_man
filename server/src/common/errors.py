@@ -78,6 +78,12 @@ class CustomerNotFound(CorpmanException):
     pass
 
 
+class TransactionNotFound(CorpmanException):
+    """Transaction Not found"""
+
+    pass
+
+
 class UserSubscriptionNotFound(CorpmanException):
     """Customer Subscription Not found"""
 
@@ -136,6 +142,10 @@ class AccountRestricted(CorpmanException):
     pass
 
 
+class BadRequest(CorpmanException):
+    pass
+
+
 def create_exception_handler(
     status_code: int, message: str
 ) -> Callable[[Request, Exception], JSONResponse]:
@@ -143,8 +153,10 @@ def create_exception_handler(
     async def exception_handler(request: Request, exc: CorpmanException):
 
         error = str(exc)
+        err_message = None
 
         is_validation_error = isinstance(exc, RequestValidationError)
+        is_bad_request = isinstance(exc, BadRequest)
         validation_error = None
 
         if is_validation_error:
@@ -152,11 +164,19 @@ def create_exception_handler(
             if exc.errors():
                 validation_error = exc.errors()[0].get("msg", message)
 
+        if is_bad_request:
+            error = message
+            err_message = str(exc)
+
         return JSONResponse(
             content={
                 "status": False,
                 "code": status_code,
-                "message": validation_error if is_validation_error else message,
+                "message": (
+                    validation_error
+                    if is_validation_error
+                    else err_message if is_bad_request else message
+                ),
                 "data": None,
                 "error": message if is_validation_error else error,
             },
@@ -195,6 +215,14 @@ def register_all_errors(app: FastAPI):
         create_exception_handler(
             status_code=status.HTTP_404_NOT_FOUND,
             message="Customer not found",
+        ),
+    )
+
+    app.add_exception_handler(
+        TransactionNotFound,
+        create_exception_handler(
+            status_code=status.HTTP_404_NOT_FOUND,
+            message="Transaction not found",
         ),
     )
 
@@ -313,6 +341,13 @@ def register_all_errors(app: FastAPI):
         create_exception_handler(
             status_code=status.HTTP_400_BAD_REQUEST,
             message="Please accept terms of use before proceeding",
+        ),
+    )
+    app.add_exception_handler(
+        BadRequest,
+        create_exception_handler(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            message="Bad request",
         ),
     )
     app.add_exception_handler(

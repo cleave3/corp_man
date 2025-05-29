@@ -6,9 +6,6 @@ from src.common.enums import TransactionTypeEnum, TransactionStatusEnum
 
 
 class TransactionCreate(BaseModel):
-    business_id: Optional[uuid.UUID] = Field(
-        default=None, examples=["a1e74521-4c78-4708-805c-9d405c36c1fc"]
-    )
     amount: float = Field(
         ..., gt=0, description="Amount must be greater than 0", examples=[5000.00]
     )
@@ -24,7 +21,9 @@ class TransactionCreate(BaseModel):
             TransactionTypeEnum.income.value,
         ],
     )
-    description: Optional[str] = Field(default=None, examples=["Initial customer deposit"])
+    description: Optional[str] = Field(
+        default=None, examples=["Initial customer deposit"]
+    )
     meta_data: Optional[dict] = Field(
         default=None,
         description="Additional data like customer_id, transaction_type",
@@ -37,9 +36,6 @@ class TransactionUpdate(BaseModel):
     description: Optional[str] = Field(
         default=None, examples=["Updated transaction description"]
     )
-    status: Optional[TransactionStatusEnum] = Field(
-        default=None, examples=[TransactionStatusEnum.completed.value]
-    )
-    meta_data: Optional[dict] = Field(
-        default=None, examples=[{"customer_id": "e223f87e-112b-4d0a-9a35-cdbcfae4c4f2"}]
-    )
+    # status: Optional[str] = Field(
+    #     default=None, examples=[TransactionStatusEnum.completed.value]
+    # )

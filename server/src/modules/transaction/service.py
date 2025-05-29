@@ -1,29 +1,80 @@
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from fastapi import Depends
 
 from src.common.enums import TransactionStatusEnum, TransactionTypeEnum
+from src.common.errors import BadRequest, TransactionNotFound
 from src.config.db import get_session
-from src.models import Transaction, Wallet
+from src.models import Transaction, TransactionApproval, Wallet
 
-from .schema import TransactionCreate, TransactionUpdate
+from .schema import TransactionCreate
 
 
 class TransactionService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create_transaction(self, data: TransactionCreate) -> Transaction:
+    async def _format_response(self, transaction: Transaction) -> dict:
+        return {
+            **transaction.model_dump(),
+            "initiator": {
+                "name": f"{getattr(transaction.initiator, 'first_name', '')} {getattr(transaction.initiator, 'last_name', '')}"
+            },
+            "approvers": await self.get_approvals_by_transaction_id(transaction.id),
+            "updated_by": {
+                "name": f"{getattr(transaction.updated_by, 'first_name', '')} {getattr(transaction.updated_by, 'last_name', '')}"
+            },
+        }
+
+    async def get_approvals_by_transaction_id(
+        self, transaction_id: uuid.UUID
+    ) -> List[TransactionApproval]:
+        result = await self.session.exec(
+            select(TransactionApproval).where(
+                TransactionApproval.transaction_id == transaction_id
+            )
+        )
+        approvals = result.fetchall()
+
+        return [
+            {
+                **approval.model_dump(),
+                "approver": {
+                    "name": f"{approval.approver.first_name} {approval.approver.last_name}"
+                },
+            }
+            for approval in approvals
+        ]
+
+    async def get_approvals_by_user_id_and_transaction_id(
+        self, user_id: str, transaction_id: uuid.UUID
+    ) -> Optional[TransactionApproval]:
+        result = await self.session.exec(
+            select(TransactionApproval).where(
+                TransactionApproval.user_id == user_id,
+                TransactionApproval.transaction_id == transaction_id,
+            )
+        )
+        return result.first()
+
+    async def create_transaction(
+        self, user_uid: str, business_id: str, data: TransactionCreate
+    ) -> Transaction:
         transaction = Transaction(
-            **data.model_dump(), status=TransactionStatusEnum.pending.value
+            **data.model_dump(),
+            status=TransactionStatusEnum.pending.value,
+            initiator_id=user_uid,
+            business_id=business_id,
+            number_of_required_approval=1,
+            requires_approval=True,
         )
         self.session.add(transaction)
         await self.session.commit()
         await self.session.refresh(transaction)
-        return transaction
+        return await self._format_response(transaction)
 
     async def get_transaction_by_id(
         self, transaction_id: uuid.UUID
@@ -31,23 +82,25 @@ class TransactionService:
         result = await self.session.exec(
             select(Transaction).where(Transaction.id == transaction_id)
         )
-        return result.first()
+
+        result = result.first()
+
+        if not result:
+            raise TransactionNotFound()
+
+        return result
 
     async def update_transaction(
-        self, transaction_id: uuid.UUID, data: TransactionUpdate
+        self, transaction_id: uuid.UUID, data: dict
     ) -> Optional[Transaction]:
         transaction = await self.get_transaction_by_id(transaction_id)
-        if not transaction:
-            return None
 
-        for key, value in data.model_dump(exclude_unset=True).items():
+        for key, value in data.items():
             setattr(transaction, key, value)
-
-        transaction.updated_at = datetime.now()
         self.session.add(transaction)
         await self.session.commit()
         await self.session.refresh(transaction)
-        return transaction
+        return await self._format_response(transaction)
 
     async def delete_transaction(self, transaction_id: uuid.UUID) -> bool:
         transaction = await self.get_transaction_by_id(transaction_id)
@@ -70,42 +123,67 @@ class TransactionService:
     ):
         offset = (page - 1) * limit
         stmt = select(Transaction)
+        count_stmt = select(func.count()).select_from(Transaction)
 
         if business_id:
             stmt = stmt.where(Transaction.business_id == business_id)
+            count_stmt = count_stmt.where(Transaction.business_id == business_id)
         if status:
             stmt = stmt.where(Transaction.status == status)
+            count_stmt = count_stmt.where(Transaction.status == status)
         if description:
             stmt = stmt.where(Transaction.description.ilike(f"%{description}%"))
+            count_stmt = count_stmt.where(
+                Transaction.description.ilike(f"%{description}%")
+            )
         if start_date:
             stmt = stmt.where(Transaction.created_at >= start_date)
+            count_stmt = count_stmt.where(Transaction.created_at >= start_date)
         if end_date:
             stmt = stmt.where(Transaction.created_at <= end_date)
+            count_stmt = count_stmt.where(Transaction.created_at <= end_date)
 
-        total_result = await self.session.exec(stmt)
-        total = total_result.count()
-
-        stmt = stmt.offset(offset).limit(limit)
+        stmt = stmt.offset(offset).limit(limit).order_by(Transaction.created_at.desc())
         result = await self.session.exec(stmt)
-        transactions = result.scalars().all()
+        count_result = await self.session.exec(count_stmt)
+        transactions = result.fetchall()
+        total_count = count_result.one()
 
         return {
-            "total": total,
+            "total": total_count,
             "page": page,
             "limit": limit,
-            "items": transactions,
+            "transactions": [
+                await self._format_response(transaction) for transaction in transactions
+            ],
         }
 
     async def approve_transaction(
-        self, transaction_id: uuid.UUID
+        self,
+        transaction_id: uuid.UUID,
+        user_uid: str,
     ) -> Optional[Transaction]:
-        transaction = await self.get_transaction_by_id(transaction_id)
+        transaction = await self.get_transaction_by_id(transaction_id=transaction_id)
 
         if not transaction:
-            return None
+            raise TransactionNotFound()
+        
+        print(transaction.status)
 
         if transaction.status != TransactionStatusEnum.pending.value:
-            return None
+            raise BadRequest("Transaction is not pending")
+
+        all_approvals = await self.get_approvals_by_transaction_id(transaction_id)
+
+        if len(all_approvals) == transaction.number_of_required_approval:
+            raise BadRequest("Transaction Already approved")
+
+        has_approved = await self.get_approvals_by_user_id_and_transaction_id(
+            user_id=user_uid, transaction_id=transaction_id
+        )
+
+        if has_approved:
+            raise BadRequest("You have already approved this transaction")
 
         customer_id = transaction.meta_data.get("customer_id")
 
@@ -121,27 +199,46 @@ class TransactionService:
                 if transaction.transaction_type == TransactionTypeEnum.payout.value
                 else 0.0
             )
-            await self._insert_into_wallet(
-                customer_id=customer_id,
-                credit=credit,
-                debit=debit,
-                description=transaction.description,
-            )
 
         transaction.status = TransactionStatusEnum.completed.value
         transaction.updated_at = datetime.now()
 
+        self.session.add(
+            TransactionApproval(transaction_id=transaction.id, user_id=user_uid)
+        )
+
+        self.session.add(transaction)
+        await self.session.commit()
+
+        await self._insert_into_wallet(
+            customer_id=customer_id,
+            credit=credit,
+            debit=debit,
+            description=transaction.description,
+        )
+
+        return await self._format_response(transaction)
+
+    async def decline_transaction(
+        self, transaction_id: uuid.UUID
+    ) -> Optional[Transaction]:
+        transaction = await self.get_transaction_by_id(transaction_id)
+
+        if transaction.status != TransactionStatusEnum.pending.value:
+            raise BadRequest("Transaction is not pending")
+
+        transaction.status = TransactionStatusEnum.cancelled.value
         self.session.add(transaction)
         await self.session.commit()
         await self.session.refresh(transaction)
-        return transaction
+        return await self._format_response(transaction)
 
     async def get_wallet_by_customer(
         self,
         customer_id: uuid.UUID,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        offset: int = 0,
+        page: int = 1,
         limit: int = 10,
     ):
         stmt = select(Wallet).where(Wallet.customer_id == customer_id)
@@ -155,15 +252,23 @@ class TransactionService:
         total_result = await self.session.exec(count_stmt)
         total = total_result.one() or 0
 
-        stmt = stmt.offset(offset).limit(limit)
+        stmt = stmt.offset((page - 1) * limit).limit(limit)
         result = await self.session.exec(stmt)
         wallets = result.fetchall()
 
+        wallets = [
+            {
+                **wallet.model_dump(),
+                "balance": await self.get_wallet_balance(wallet.customer_id),
+            }
+            for wallet in wallets
+        ]
+
         return {
             "total": total,
-            "offset": offset,
+            "page": page,
             "limit": limit,
-            "items": wallets,
+            "wallet_history": wallets,
         }
 
     async def _insert_into_wallet(

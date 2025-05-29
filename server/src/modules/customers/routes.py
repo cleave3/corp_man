@@ -20,8 +20,9 @@ async def create_customer(
         )
     ),
 ):
+    print(user_data)
     customer = await service.create_customer(
-        data=data, business_id=user_data.business_id
+        data=data, business_id=user_data.business_id, user_uid=user_data.uid
     )
 
     return response(data=customer, message="Customer created successfully", code=201)

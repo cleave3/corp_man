@@ -139,6 +139,24 @@ class User(SQLModel, table=True):
     updated_at: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, default=datetime.now, onupdate=datetime.now)
     )
+    initiated_transactions: List["Transaction"] = Relationship(
+        back_populates="initiator",
+        sa_relationship_kwargs={
+            "lazy": "selectin",
+            "foreign_keys": "[Transaction.initiator_id]",
+        },
+    )
+    created_customers: List["Customer"] = Relationship(
+        back_populates="creator",
+        sa_relationship_kwargs={"lazy": "selectin"},
+    )
+    updated_transactions: List["Transaction"] = Relationship(
+        back_populates="updated_by",
+        sa_relationship_kwargs={
+            "lazy": "selectin",
+            "foreign_keys": "[Transaction.updated_by_id]",
+        },
+    )
 
     def __repr__(self):
         return f"<User {self.uid}>"
@@ -250,6 +268,14 @@ class Customer(SQLModel, table=True):
         sa_column=Column(pg.TIMESTAMP, default=datetime.now, onupdate=datetime.now)
     )
 
+    creator_id: Optional[uuid.UUID] = Field(
+        nullable=True, default=None, foreign_key="users.uid"
+    )
+    creator: Optional["User"] = Relationship(
+        back_populates="created_customers",
+        sa_relationship_kwargs={"lazy": "selectin"},
+    )
+
     def __repr__(self):
         return f"<Customer {self.id}>"
 
@@ -265,6 +291,7 @@ class Wallet(SQLModel, table=True):
     customer_id: uuid.UUID = Field(nullable=False, foreign_key="customers.id")
     debit: float = Field(sa_column=Column(pg.FLOAT, nullable=False, default="0.0"))
     credit: float = Field(sa_column=Column(pg.FLOAT, nullable=False, default="0.0"))
+    description: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
 
     def __repr__(self):
@@ -374,6 +401,28 @@ class Transaction(SQLModel, table=True):
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
     updated_at: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, default=datetime.now, onupdate=datetime.now)
+    )
+    initiator_id: uuid.UUID = Field(
+        nullable=True, default=None, foreign_key="users.uid"
+    )
+
+    initiator: Optional["User"] = Relationship(
+        back_populates="initiated_transactions",
+        sa_relationship_kwargs={
+            "lazy": "selectin",
+            "foreign_keys": "[Transaction.initiator_id]",
+        },
+    )
+    updated_by_id: uuid.UUID = Field(
+        nullable=True, default=None, foreign_key="users.uid"
+    )
+
+    updated_by: Optional["User"] = Relationship(
+        back_populates="updated_transactions",
+        sa_relationship_kwargs={
+            "lazy": "selectin",
+            "foreign_keys": "[Transaction.updated_by_id]",
+        },
     )
 
     def __repr__(self):

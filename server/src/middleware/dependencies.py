@@ -65,6 +65,8 @@ class TokenBearer(HTTPBearer):
 class AcessTokenBearer(TokenBearer):
     def verify_token(self, token_data: dict) -> None:
 
+        print("Token Data:", token_data)
+
         if not token_data:
             raise InvalidToken()
 
@@ -117,6 +119,8 @@ async def get_current_user_permissions(
     token_data: dict = Depends(AcessTokenBearer()),
     auth_service: AuthService = Depends(get_auth_service),
 ) -> Auth:
+    
+    print("Token Data:", token_data)
 
     user = await auth_service.get_user_by_id(uid=token_data["user"]["uid"])
 

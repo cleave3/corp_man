@@ -17,10 +17,14 @@ class CustomerService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create_customer(self, business_id: str, data: CustomerCreate) -> Customer:
+    async def create_customer(
+        self, business_id: str, user_uid: str, data: CustomerCreate
+    ) -> Customer:
         opening_balance = data.opening_balance or 0.0
         customer_data = data.model_dump(exclude={"opening_balance"})
-        customer = Customer(**customer_data, business_id=business_id)
+        customer = Customer(
+            **customer_data, business_id=business_id, creator_id=user_uid
+        )
 
         self.session.add(customer)
         await self.session.commit()
@@ -29,8 +33,9 @@ class CustomerService:
         transaction_service = get_transaction_service(session=self.session)
 
         await transaction_service.create_transaction(
+            user_uid=user_uid,
+            business_id=business_id,
             data=TransactionCreate(
-                business_id=business_id,
                 transaction_type="customer_deposit",
                 amount=opening_balance,
                 description=f"Opening balance deposit for {customer.first_name} {customer.last_name or ''}",
@@ -38,7 +43,7 @@ class CustomerService:
                     "customer_id": str(customer.id),
                     "comment": "opening_deposit",
                 },
-            )
+            ),
         )
 
         return customer
@@ -52,9 +57,14 @@ class CustomerService:
 
         profile = result.first()
 
+        creator = getattr(profile, "creator", None)
+
         return {
             "balance": await transaction_service.get_wallet_balance(customer_id),
-            **profile.__dict__,
+            **profile.model_dump(),
+            "creator": {
+                "name": f"{getattr(creator, 'first_name', None)} {getattr(creator, 'last_name', None)}",
+            },
         }
 
     async def get_customer_by_id(self, customer_id: uuid.UUID) -> Optional[Customer]:
@@ -95,7 +105,7 @@ class CustomerService:
     async def paginated_get_customers(
         self, business_id: Optional[uuid.UUID] = None, page: int = 1, limit: int = 10
     ) -> dict:
-        stmt = select(Customer)
+        stmt = select(Customer).order_by(Customer.created_at.desc())
         if business_id:
             stmt = stmt.where(Customer.business_id == business_id)
         count_stmt = select(func.count()).select_from(Customer)
@@ -112,6 +122,13 @@ class CustomerService:
         customers = [
             {
                 **customer.model_dump(),
+                "creator": (
+                    {
+                        "name": f"{getattr(customer.creator, 'first_name', '')} {getattr(customer.creator, 'last_name', '')}",
+                    }
+                    if customer.creator
+                    else {}
+                ),
                 "balance": await transaction_service.get_wallet_balance(customer.id),
                 # "wallet_history": customer.wallet_history,
             }
