@@ -49,10 +49,21 @@ class UserCreateModel(BaseModel):
     permissions: List[str] = Field(
         examples=[
             [
+                "dashboard.overview",
+                "dashboard.revenue",
+                "dashboard.target",
+                "dashboard.due_payments",
+                "dashboard.notifications",
+                "dashboard.pending",
                 "user.view",
                 "user.update",
                 "user.create",
                 "user.delete",
+                "customer.view",
+                "customer.update",
+                "customer.create",
+                "customer.delete",
+                "customer.view_balances",
                 "business.update",
                 "business.view",
                 "business.update_preferences",
@@ -74,10 +85,21 @@ class UpdatePermissionModel(BaseModel):
     permissions: List[str] = Field(
         examples=[
             [
+                "dashboard.overview",
+                "dashboard.revenue",
+                "dashboard.target",
+                "dashboard.due_payments",
+                "dashboard.notifications",
+                "dashboard.pending",
                 "user.view",
                 "user.update",
                 "user.create",
                 "user.delete",
+                "customer.view",
+                "customer.update",
+                "customer.create",
+                "customer.delete",
+                "customer.view_balances",
                 "business.update",
                 "business.view",
                 "business.update_preferences",

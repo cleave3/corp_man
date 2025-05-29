@@ -6,79 +6,85 @@ from sqlalchemy.exc import SQLAlchemyError
 from fastapi.exceptions import RequestValidationError
 
 
-class CreditActionAppException(Exception):
+class CorpmanException(Exception):
     """This is the base class for all credit_action_app errors"""
 
     pass
 
 
-class PasswordAlreadySet(CreditActionAppException):
+class PasswordAlreadySet(CorpmanException):
     """User has already set a password"""
 
     pass
 
 
-class InvalidToken(CreditActionAppException):
+class InvalidToken(CorpmanException):
     """User has provided an invalid or expired token"""
 
     pass
 
 
-class RevokedToken(CreditActionAppException):
+class RevokedToken(CorpmanException):
     """User has provided a token that has been revoked"""
 
     pass
 
 
-class AccessTokenRequired(CreditActionAppException):
+class AccessTokenRequired(CorpmanException):
     """User has provided a refresh token when an access token is needed"""
 
     pass
 
 
-class RefreshTokenRequired(CreditActionAppException):
+class RefreshTokenRequired(CorpmanException):
     """User has provided an access token when a refresh token is needed"""
 
     pass
 
 
-class UserAlreadyExists(CreditActionAppException):
+class UserAlreadyExists(CorpmanException):
     """User has provided an email for a user who exists during sign up."""
 
     pass
 
 
-class UserPhoneAlreadyExists(CreditActionAppException):
+class UserPhoneAlreadyExists(CorpmanException):
     """User has provided an phone for a user who exists during sign up."""
 
     pass
 
 
-class InvalidCredentials(CreditActionAppException):
+class InvalidCredentials(CorpmanException):
     """User has provided wrong email or password during log in."""
 
     pass
 
 
-class InsufficientPermission(CreditActionAppException):
+class InsufficientPermission(CorpmanException):
     """User does not have the neccessary permissions to perform an action."""
 
     pass
 
 
-class UserNotFound(CreditActionAppException):
+class UserNotFound(CorpmanException):
     """User Not found"""
 
     pass
 
 
-class UserSubscriptionNotFound(CreditActionAppException):
-    """UserSubscription Not found"""
+class CustomerNotFound(CorpmanException):
+    """Customer Not found"""
 
     pass
 
 
-class UserAlreadyVerified(CreditActionAppException):
+class UserSubscriptionNotFound(CorpmanException):
+    """Customer Subscription Not found"""
+
+    pass
+
+
+class UserAlreadyVerified(CorpmanException):
     """User Already Verified"""
 
     pass
@@ -120,12 +126,13 @@ class ActionNotAllowed(Exception):
     pass
 
 
-class InvalidPassword(CreditActionAppException):
+class InvalidPassword(CorpmanException):
     """User current password doesn't match."""
 
     pass
 
-class AccountRestricted(CreditActionAppException):
+
+class AccountRestricted(CorpmanException):
     pass
 
 
@@ -133,15 +140,25 @@ def create_exception_handler(
     status_code: int, message: str
 ) -> Callable[[Request, Exception], JSONResponse]:
 
-    async def exception_handler(request: Request, exc: CreditActionAppException):
+    async def exception_handler(request: Request, exc: CorpmanException):
+
+        error = str(exc)
+
+        is_validation_error = isinstance(exc, RequestValidationError)
+        validation_error = None
+
+        if is_validation_error:
+            # Extract the first error message from the validation errors
+            if exc.errors():
+                validation_error = exc.errors()[0].get("msg", message)
 
         return JSONResponse(
             content={
                 "status": False,
                 "code": status_code,
-                "message": message,
+                "message": validation_error if is_validation_error else message,
                 "data": None,
-                "error": str(exc),
+                "error": message if is_validation_error else error,
             },
             status_code=status_code,
         )
@@ -170,6 +187,14 @@ def register_all_errors(app: FastAPI):
         create_exception_handler(
             status_code=status.HTTP_404_NOT_FOUND,
             message="User not found",
+        ),
+    )
+
+    app.add_exception_handler(
+        CustomerNotFound,
+        create_exception_handler(
+            status_code=status.HTTP_404_NOT_FOUND,
+            message="Customer not found",
         ),
     )
 

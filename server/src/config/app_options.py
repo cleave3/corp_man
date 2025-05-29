@@ -38,5 +38,6 @@ app_options = {
     "swagger_ui_parameters": {
         "defaultModelsExpandDepth": -1,
         "displayRequestDuration": True,
+        "docExpansion": "none",
     },
 }

@@ -241,6 +241,10 @@ class Customer(SQLModel, table=True):
     next_payment_date: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, nullable=True, default=datetime.now)
     )
+    wallet_history: List["Wallet"] = Relationship(
+        back_populates="customer",
+        sa_relationship_kwargs={"lazy": "selectin"},
+    )
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
     updated_at: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, default=datetime.now, onupdate=datetime.now)
@@ -254,6 +258,9 @@ class Wallet(SQLModel, table=True):
     __tablename__ = "wallets"
     id: uuid.UUID = Field(
         sa_column=Column(pg.UUID, nullable=False, primary_key=True, default=uuid.uuid4)
+    )
+    customer: Optional["Customer"] = Relationship(
+        back_populates="wallet_history", sa_relationship_kwargs={"lazy": "selectin"}
     )
     customer_id: uuid.UUID = Field(nullable=False, foreign_key="customers.id")
     debit: float = Field(sa_column=Column(pg.FLOAT, nullable=False, default="0.0"))
@@ -358,7 +365,7 @@ class Transaction(SQLModel, table=True):
         sa_column=Column(pg.BOOLEAN, nullable=False, default=False)
     )
     number_of_required_approval: int = Field(
-        sa_column=Column(pg.INTEGER, nullable=False, server_default="0")
+        sa_column=Column(pg.INTEGER, nullable=False, default=0, server_default="0")
     )
     approvals: List["TransactionApproval"] = Relationship(
         back_populates="transaction",
