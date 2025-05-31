@@ -55,6 +55,12 @@ class AuthService(RedisService):
         user = await self.session.exec(select(Auth).where(Auth.uid == uid))
         return user.first()
 
+    async def get_user_name_by_id(self, uid: str) -> Auth | None:
+        user = await self.session.exec(select(Auth).where(Auth.uid == uid))
+        result = user.first()
+
+        return f"{result.name}"
+
     async def get_users_by_business_id(self, business_id: str) -> List[Auth]:
         users = await self.session.exec(
             select(Auth).where(Auth.business_id == business_id)
@@ -99,6 +105,8 @@ class AuthService(RedisService):
             "is_email_verified": True,
             "is_phone_verified": True,
             "phone": phone,
+            "user_type": "staff",
+            "status": "active",
             "password_hash": get_password_hash(user_data.password),
         }
 

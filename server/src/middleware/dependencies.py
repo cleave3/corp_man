@@ -109,7 +109,7 @@ async def get_current_user(
     if user.status != "active":
         raise AccountRestricted()
 
-    if user.user_type not in {"user", "root"}:
+    if user.user_type not in {"user", "root", "staff"}:
         raise InsufficientPermission()
 
     return user
@@ -119,8 +119,6 @@ async def get_current_user_permissions(
     token_data: dict = Depends(AcessTokenBearer()),
     auth_service: AuthService = Depends(get_auth_service),
 ) -> Auth:
-    
-    print("Token Data:", token_data)
 
     user = await auth_service.get_user_by_id(uid=token_data["user"]["uid"])
 

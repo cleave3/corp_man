@@ -46,14 +46,14 @@ templates = templating.Jinja2Templates(directory="view")
 @auth_router.post("/register-member", status_code=status.HTTP_201_CREATED)
 async def register_team_member(
     user_data: UserCreateModel,
-    token_data: dict = Depends(
+    token_data=Depends(
         PermissionChecker(allowed_permissions=[user_permission_actions["create_user"]])
     ),
     auth_service: AuthService = Depends(get_auth_service),
 ):
 
     member = await auth_service.create_user(
-        user_data=user_data, business_id=token_data["user"]["bid"]
+        user_data=user_data, business_id=token_data.business_id
     )
 
     return response(data=member, message="Member add successfully")
@@ -235,7 +235,11 @@ async def login_user(
     password = auth_data.password
 
     result = await auth_service.login(
-        auth_data={"email": email, "password": password, "user_type": ["user", "root"]},
+        auth_data={
+            "email": email,
+            "password": password,
+            "user_type": ["user", "root", "staff"],
+        },
     )
 
     return response(message="Login successful", data=result)

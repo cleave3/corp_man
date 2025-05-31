@@ -27,7 +27,12 @@ class TransactionCreate(BaseModel):
     meta_data: Optional[dict] = Field(
         default=None,
         description="Additional data like customer_id, transaction_type",
-        examples=[{"customer_id": "e223f87e-112b-4d0a-9a35-cdbcfae4c4f2"}],
+        examples=[
+            {
+                "customer_id": "e223f87e-112b-4d0a-9a35-cdbcfae4c4f2",
+                "next_payment_date": "2025-05-01",
+            }
+        ],
     )
 
 

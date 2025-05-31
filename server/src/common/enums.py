@@ -4,6 +4,7 @@ class UserTypeEnum(enum.Enum):
     user = "user"
     root = "root"
     admin = "admin"
+    staff = "staff"
 
 
 class TwoFactorEnum(enum.Enum):

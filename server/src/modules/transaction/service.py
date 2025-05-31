@@ -5,10 +5,11 @@ from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from fastapi import Depends
 
+from src.common.utilities import calculate_next_payment_date
 from src.common.enums import TransactionStatusEnum, TransactionTypeEnum
-from src.common.errors import BadRequest, TransactionNotFound
+from src.common.errors import BadRequest, CustomerNotFound, TransactionNotFound
 from src.config.db import get_session
-from src.models import Transaction, TransactionApproval, Wallet
+from src.models import Customer, Transaction, TransactionApproval, Wallet
 
 from .schema import TransactionCreate
 
@@ -167,8 +168,6 @@ class TransactionService:
 
         if not transaction:
             raise TransactionNotFound()
-        
-        print(transaction.status)
 
         if transaction.status != TransactionStatusEnum.pending.value:
             raise BadRequest("Transaction is not pending")
@@ -185,9 +184,45 @@ class TransactionService:
         if has_approved:
             raise BadRequest("You have already approved this transaction")
 
-        customer_id = transaction.meta_data.get("customer_id")
+        transaction.status = TransactionStatusEnum.completed.value
+        transaction.updated_at = datetime.now()
 
-        if customer_id:
+        self.session.add(
+            TransactionApproval(transaction_id=transaction.id, user_id=user_uid)
+        )
+
+        self.session.add(transaction)
+
+        if transaction.transaction_type in {
+            TransactionTypeEnum.customer_deposit.value,
+            TransactionTypeEnum.payout.value,
+        }:
+            customer_id = transaction.meta_data.get("customer_id")
+
+            result = await self.session.exec(
+                select(Customer).where(Customer.id == customer_id)
+            )
+
+            customer = result.first()
+
+            if not customer:
+                raise CustomerNotFound(f"Customer with ID {customer_id} not found.")
+
+            submitted_next_payment = transaction.meta_data.get("next_payment_date")
+
+            next_payment_date = (
+                datetime.strptime(submitted_next_payment, "%Y-%m-%d")
+                if submitted_next_payment
+                else calculate_next_payment_date(
+                    next_payment_date=customer.next_payment_date,
+                    frequency=customer.payment_frequency,
+                )
+            )
+
+            customer.next_payment_date = next_payment_date
+
+            self.session.add(customer)
+
             credit = (
                 transaction.amount
                 if transaction.transaction_type
@@ -200,14 +235,6 @@ class TransactionService:
                 else 0.0
             )
 
-        transaction.status = TransactionStatusEnum.completed.value
-        transaction.updated_at = datetime.now()
-
-        self.session.add(
-            TransactionApproval(transaction_id=transaction.id, user_id=user_uid)
-        )
-
-        self.session.add(transaction)
         await self.session.commit()
 
         await self._insert_into_wallet(
