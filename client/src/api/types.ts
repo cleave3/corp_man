@@ -110,3 +110,31 @@ export type AuthUser = {
     image_url: null;
     created_at: string;
 };
+
+export type Business = {
+    business_name: string;
+    business_address: string;
+    business_email: string;
+    business_type: string;
+    business_website: string;
+    certificate_url: string;
+    business_kyc_status: string;
+    updated_at: string;
+    id: string;
+    business_phone: string;
+    logo_url: string;
+    business_nature: string;
+    business_reg_no: string;
+    modules: string[];
+    created_at: string;
+    preferences: {
+        id: string;
+        sms_id: string;
+        require_two_factor: boolean;
+        updated_at: string;
+        sms_notification: boolean;
+        business_id: string;
+        email_notification: boolean;
+        created_at: string;
+    };
+};
