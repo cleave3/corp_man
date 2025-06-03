@@ -224,9 +224,7 @@ async def resend_verification_code(
     )
 
 
-@auth_router.post(
-    "/login-user", status_code=status.HTTP_200_OK, response_model=LoginResponseModel
-)
+@auth_router.post("/login-user", status_code=status.HTTP_200_OK)
 async def login_user(
     auth_data: UserLoginModel,
     auth_service: AuthService = Depends(get_auth_service),
@@ -245,9 +243,7 @@ async def login_user(
     return response(message="Login successful", data=result)
 
 
-@auth_router.post(
-    "/login-admin", status_code=status.HTTP_200_OK, response_model=LoginResponseModel
-)
+@auth_router.post("/login-admin", status_code=status.HTTP_200_OK)
 async def login_admin(
     user_data: UserLoginModel,
     auth_service: AuthService = Depends(get_auth_service),
@@ -294,7 +290,9 @@ async def get_current_user(
     print(token_data)
     user = await auth_service.get_profile_by_uid(uid=token_data["user"]["uid"])
 
-    return response(data=user)
+    auth = await auth_service.get_user_by_id(uid=token_data["user"]["uid"])
+
+    return response(data={**user.model_dump(), **auth.model_dump(exclude="password_hash")})
 
 
 @auth_router.patch("/change-password")

@@ -117,9 +117,9 @@ class AnalyticsService(AuthService):
             .group_by(
                 Transaction.initiator_id,
             )
+            .order_by(func.count().desc())
         )
         rows = result.all()
-        print(rows)
         return [
             {
                 "initiator_id": initiator_id,

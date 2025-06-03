@@ -278,10 +278,7 @@ class AuthService(RedisService):
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
-            "user": {
-                "uid": str(auth.uid),
-                "email": email,
-            },
+            "user": {"uid": str(auth.uid)},
         }
 
     async def socio_authentication(self, data: SocioAuthModel):

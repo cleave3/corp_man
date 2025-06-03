@@ -1,0 +1,203 @@
+import { useState } from "react";
+import PageBreadcrumb from "../../components/common/PageBreadCrumb";
+import { TableLoader, Table, TableHeader, TableRow, TableCell, TableBody, Pagination } from "../../components/ui/table";
+import { useTransactions } from "../../hooks/useApiHooks";
+import { formatCurrency } from "../../utils";
+import { formatDate } from "../../utils/date";
+import Badge from "../../components/ui/badge/Badge";
+import { useModal } from "../../hooks/useModal";
+import { Modal } from "../../components/ui/modal";
+import { Transaction } from "../../api/types";
+import TransactionDetail from "./TransactionDetail";
+import Select from "../../components/form/Select";
+import Input from "../../components/form/input/InputField";
+
+const Transactions = () => {
+    const [showFilters, setShowFilters] = useState(false);
+    const [selectedTransaction, setSelectedTransaction] = useState<Transaction>(null);
+    const [filterData, setFilterData] = useState({ page: 1, limit: 15, start_date: "", status: "", end_date: "" });
+
+    const { closeModal, isOpen, openModal } = useModal();
+
+    const { data, isLoading } = useTransactions(filterData);
+
+    const pageData = data?.data?.transactions ?? [];
+
+    const currentPage = data?.data?.page ?? 1;
+
+    const pageSize = data?.data?.limit ?? 15;
+
+    const totalData = data?.data?.total ?? 0;
+
+    if (isLoading) return <TableLoader length={filterData.limit} />;
+    return (
+        <>
+            <PageBreadcrumb pageTitle={`Transactions`} />
+            <div className="flex justify-end mb-4">
+                <div className="relative">
+                    <button
+                        type="button"
+                        className="p-2 rounded hover:bg-gray-100 dark:hover:bg-dark-800 transition"
+                        onClick={() => setShowFilters((prev) => !prev)}
+                        aria-label="Show Filters"
+                    >
+                        {/* Filter Icon (SVG) */}
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                            <path
+                                d="M3 5h18M6 12h12M10 19h4"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </button>
+                    {showFilters && (
+                        <div
+                            className={`absolute right-0 mt-2 z-10 bg-white dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded shadow-lg p-4 min-w-[320px] transition-all duration-300 ease-in-out ${
+                                showFilters ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
+                            }`}
+                            style={{ willChange: "opacity, transform" }}
+                        >
+                            <div className="flex flex-col gap-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                    <label
+                                        className="text-xs text-gray-500 min-w-[110px] sm:text-right sm:mr-2"
+                                        htmlFor="transaction-status"
+                                    >
+                                        Transaction Status
+                                    </label>
+                                    <Select
+                                        selectedValue={filterData?.status}
+                                        options={[
+                                            { value: "", label: "All" },
+                                            { value: "cancelled", label: "Cancelled" },
+                                            { value: "completed", label: "Completed" },
+                                            { value: "pending", label: "Pending" }
+                                        ]}
+                                        placeholder="Transaction Status"
+                                        onChange={(value) => setFilterData((prev) => ({ ...prev, status: value }))}
+                                        className="dark:bg-dark-900 w-60"
+                                    />
+                                </div>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                    <label className="text-xs text-gray-500 min-w-[80px] sm:text-right sm:mr-2" htmlFor="start-date">
+                                        Start Date
+                                    </label>
+                                    <Input
+                                        id="start-date"
+                                        type="date"
+                                        placeholder="Start Date"
+                                        className="w-60"
+                                        value={filterData?.start_date}
+                                        onChange={(e) => setFilterData((prev) => ({ ...prev, start_date: e.target.value }))}
+                                    />
+                                </div>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                    <label className="text-xs text-gray-500 min-w-[80px] sm:text-right sm:mr-2" htmlFor="end-date">
+                                        End Date
+                                    </label>
+                                    <Input
+                                        id="end-date"
+                                        type="date"
+                                        placeholder="End Date"
+                                        className="w-60"
+                                        value={filterData?.end_date}
+                                        onChange={(e) => setFilterData((prev) => ({ ...prev, end_date: e.target.value }))}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+                <div className="max-w-full overflow-x-auto">
+                    <div className="min-w-[1102px]">
+                        <Table>
+                            {/* Table Header */}
+                            <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                                <TableRow>
+                                    <TableCell isHeader className="">
+                                        ID
+                                    </TableCell>
+                                    <TableCell isHeader className="">
+                                        Amount
+                                    </TableCell>
+                                    <TableCell isHeader className="">
+                                        Type
+                                    </TableCell>
+                                    <TableCell isHeader className="">
+                                        Status
+                                    </TableCell>
+                                    <TableCell isHeader className="">
+                                        Description
+                                    </TableCell>
+                                    <TableCell isHeader className="">
+                                        Initiator
+                                    </TableCell>
+                                    <TableCell isHeader className="">
+                                        Created At
+                                    </TableCell>
+                                </TableRow>
+                            </TableHeader>
+
+                            {/* Table Body */}
+                            <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                                {pageData.map((transaction) => (
+                                    <TableRow
+                                        key={transaction.id}
+                                        onClick={() => {
+                                            setSelectedTransaction(transaction);
+                                            openModal();
+                                        }}
+                                    >
+                                        <TableCell className="">{transaction?.id}</TableCell>
+                                        <TableCell className="">{formatCurrency(transaction?.amount)}</TableCell>
+                                        <TableCell className="">{transaction?.transaction_type}</TableCell>
+                                        <TableCell className="">
+                                            <Badge
+                                                variant="light"
+                                                children={transaction?.status}
+                                                color={
+                                                    transaction?.status === "completed"
+                                                        ? "success"
+                                                        : transaction?.status === "pending"
+                                                        ? "warning"
+                                                        : "error"
+                                                }
+                                            />
+                                        </TableCell>
+                                        <TableCell className="">{transaction?.description}</TableCell>
+                                        <TableCell className="">{transaction?.initiator?.name}</TableCell>
+                                        <TableCell className="">{formatDate(transaction?.created_at, "llll")}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </div>
+                <Pagination
+                    loaded={pageData.length}
+                    total={totalData}
+                    page={currentPage}
+                    limit={pageSize}
+                    nextFunc={() => setFilterData((prev) => ({ ...prev, page: prev.page + 1 }))}
+                    prevFunc={() => setFilterData((prev) => ({ ...prev, page: prev.page - 1 }))}
+                />
+            </div>
+            <Modal
+                isOpen={isOpen}
+                onClose={() => {
+                    setSelectedTransaction(null);
+                    closeModal();
+                }}
+                className="max-w-[700px] m-2"
+            >
+                {selectedTransaction && <TransactionDetail selectedTransaction={selectedTransaction} />}
+            </Modal>
+        </>
+    );
+};
+
+export default Transactions;

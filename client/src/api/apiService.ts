@@ -1,4 +1,3 @@
-// src/api/ApiService.ts
 import axios, { AxiosInstance } from "axios";
 import Cookies from "js-cookie";
 import {
@@ -15,10 +14,21 @@ import {
     CreateCustomerRequest,
     PaginatedQuery,
     UpdateCustomerRequest,
-    CreateTransactionRequest
+    CreateTransactionRequest,
+    SignInResponseData,
+    APIResponse,
+    AuthUser,
+    Customer,
+    PaginatedResponsePayload,
+    Transaction,
+    Business,
+    Auth,
+    OverviewStats,
+    TransactionYearStats,
+    TransactionInitiatorStats
 } from "./types";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://localhost:8000";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 const api: AxiosInstance = axios.create({ baseURL: BASE_URL, withCredentials: true });
 
@@ -55,127 +65,167 @@ api.interceptors.response.use(
 
 export default class ApiService {
     // Auth
-    static loginUser(data: LoginUserRequest) {
-        return api.post("/api/v1/auth/login-user", data);
+    static async loginUser(data: LoginUserRequest): Promise<APIResponse<SignInResponseData>> {
+        try {
+            const res = await api.post("/api/v1/auth/login-user", data);
+            return res.data;
+        } catch (error) {
+            throw error?.response?.data;
+        }
     }
 
-    static socioAuth(data: SocioAuthRequest) {
-        return api.post("/api/v1/auth/socio-auth", data);
+    static async socioAuth(data: SocioAuthRequest): Promise<APIResponse<SignInResponseData>> {
+        const res = await api.post("/api/v1/auth/socio-auth", data);
+        return res.data;
     }
 
-    static getMe() {
-        return api.get("/api/v1/auth/me");
+    static async getMe(headers = {}): Promise<APIResponse<AuthUser>> {
+        try {
+            const res = await api.get("/api/v1/auth/me", { headers: { ...headers } });
+            Cookies.set("auth_user", JSON.stringify(res.data?.data), { expires: 1 });
+            return res.data;
+        } catch (error) {
+            throw error?.response?.data;
+        }
     }
 
-    static refreshToken() {
-        return api.get("/api/v1/auth/refresh-token");
+    static async refreshToken(): Promise<APIResponse<SignInResponseData>> {
+        const res = await api.get("/api/v1/auth/refresh-token");
+        return res.data;
     }
 
-    static logout() {
-        return api.get("/api/v1/auth/logout");
+    static async logout(): Promise<APIResponse<unknown>> {
+        const res = await api.get("/api/v1/auth/logout");
+        return res.data;
     }
 
-    static registerMember(data: RegisterMemberRequest) {
-        return api.post("/api/v1/auth/register-member", data);
+    static async registerMember(data: RegisterMemberRequest): Promise<APIResponse<unknown>> {
+        const res = await api.post("/api/v1/auth/register-member", data);
+        return res.data;
     }
 
-    static resendVerification(data: ResendVerificationRequest) {
-        return api.post("/api/v1/auth/resend-verification-code", data);
+    static async resendVerification(data: ResendVerificationRequest): Promise<APIResponse<unknown>> {
+        const res = await api.post("/api/v1/auth/resend-verification-code", data);
+        return res.data;
     }
 
-    static changePassword(data: ChangePasswordRequest) {
-        return api.patch("/api/v1/auth/change-password", data);
+    static async changePassword(data: ChangePasswordRequest): Promise<APIResponse<unknown>> {
+        const res = await api.patch("/api/v1/auth/change-password", data);
+        return res.data;
     }
 
-    static forgotPassword(data: ForgotPasswordRequest) {
-        return api.post("/api/v1/auth/forgot-password", data);
+    static async forgotPassword(data: ForgotPasswordRequest): Promise<APIResponse<unknown>> {
+        const res = await api.post("/api/v1/auth/forgot-password", data);
+        return res.data;
     }
 
-    static getUsers() {
-        return api.get("/api/v1/auth/users");
+    static async getUsers(): Promise<APIResponse<Auth[]>> {
+        const res = await api.get("/api/v1/auth/users");
+        return res.data;
     }
 
-    static getUserById(userId: string) {
-        return api.get(`/api/v1/auth/user/${userId}`);
+    static async getUserById(userId: string): Promise<APIResponse<unknown>> {
+        const res = await api.get(`/api/v1/auth/user/${userId}`);
+        return res.data;
     }
 
-    static updateUserStatus(userId: string, data: UpdateStatusRequest) {
-        return api.patch(`/api/v1/auth/update-status/${userId}`, data);
+    static async updateUserStatus(userId: string, data: UpdateStatusRequest): Promise<APIResponse<unknown>> {
+        const res = await api.patch(`/api/v1/auth/update-status/${userId}`, data);
+        return res.data;
     }
 
-    static updateUserPermissions(userId: string, data: UpdatePermissionsRequest) {
-        return api.patch(`/api/v1/auth/update-permissions/${userId}`, data);
+    static async updateUserPermissions(userId: string, data: UpdatePermissionsRequest): Promise<APIResponse<unknown>> {
+        const res = await api.patch(`/api/v1/auth/update-permissions/${userId}`, data);
+        return res.data;
     }
 
     // Analytics
-    static getOverviewStats() {
-        return api.get("/api/v1/analytics/overview-stats");
+    static async getOverviewStats(): Promise<APIResponse<OverviewStats>> {
+        const res = await api.get("/api/v1/analytics/overview-stats");
+        return res.data;
     }
 
-    static getTransactionsByInitiator() {
-        return api.get("/api/v1/analytics/transactions-initiator-stats");
+    static async getTransactionsByInitiator(): Promise<APIResponse<TransactionInitiatorStats>> {
+        const res = await api.get("/api/v1/analytics/transactions-initiator-stats");
+        return res.data;
     }
 
-    static getTransactionYearStats() {
-        return api.get("/api/v1/analytics/transaction-year-stats");
+    static async getTransactionYearStats(params: { year: string }): Promise<APIResponse<TransactionYearStats>> {
+        const res = await api.get("/api/v1/analytics/transaction-year-stats", { params });
+        return res.data;
     }
 
-    static getDueCollections() {
-        return api.get("/api/v1/analytics/due-collections");
+    static async getDueCollections(): Promise<APIResponse<unknown>> {
+        const res = await api.get("/api/v1/analytics/due-collections");
+        return res.data;
     }
 
     // Business
-    static submitBusiness(data: SubmitBusinessRequest) {
-        return api.post("/api/v1/business", data);
+    static async submitBusiness(data: SubmitBusinessRequest): Promise<APIResponse<unknown>> {
+        const res = await api.post("/api/v1/business", data);
+        return res.data;
     }
 
-    static getBusiness() {
-        return api.get("/api/v1/business/me");
+    static async getBusiness(): Promise<APIResponse<Business>> {
+        const res = await api.get("/api/v1/business/me");
+        return res.data;
     }
 
-    static updateBusinessPreferences(data: UpdateBusinessPreferencesRequest) {
-        return api.patch("/api/v1/business/preferences", data);
+    static async updateBusinessPreferences(data: UpdateBusinessPreferencesRequest): Promise<APIResponse<unknown>> {
+        const res = await api.patch("/api/v1/business/preferences", data);
+        return res.data;
     }
 
     // Customer
-    static createCustomer(data: CreateCustomerRequest) {
-        return api.post("/api/v1/customer", data);
+    static async createCustomer(data: CreateCustomerRequest): Promise<APIResponse<unknown>> {
+        const res = await api.post("/api/v1/customer", data);
+        return res.data;
     }
 
-    static listCustomers(params: PaginatedQuery) {
-        return api.get("/api/v1/customer", { params });
+    static async listCustomers(params: PaginatedQuery): Promise<PaginatedResponsePayload<Customer[], "customers">> {
+        const res = await api.get("/api/v1/customer", { params });
+        console.log({ data: res.data });
+        return res.data;
     }
 
-    static getCustomerById(customerId: string) {
-        return api.get(`/api/v1/customer/${customerId}`);
+    static async getCustomerById(customerId: string): Promise<APIResponse<unknown>> {
+        const res = await api.get(`/api/v1/customer/${customerId}`);
+        return res.data;
     }
 
-    static updateCustomer(customerId: string, data: UpdateCustomerRequest) {
-        return api.patch(`/api/v1/customer/${customerId}`, data);
+    static async updateCustomer(customerId: string, data: UpdateCustomerRequest): Promise<APIResponse<unknown>> {
+        const res = await api.patch(`/api/v1/customer/${customerId}`, data);
+        return res.data;
     }
 
     // Transactions
-    static createTransaction(data: CreateTransactionRequest) {
-        return api.post("/api/v1/transaction", data);
+    static async createTransaction(data: CreateTransactionRequest): Promise<APIResponse<unknown>> {
+        const res = await api.post("/api/v1/transaction", data);
+        return res.data;
     }
 
-    static listTransactions(params: PaginatedQuery) {
-        return api.get("/api/v1/transaction", { params });
+    static async listTransactions(params: PaginatedQuery): Promise<PaginatedResponsePayload<Transaction[], "transactions">> {
+        const res = await api.get("/api/v1/transaction", { params });
+        return res.data;
     }
 
-    static getTransaction(transactionId: string) {
-        return api.get(`/api/v1/transaction/${transactionId}`);
+    static async getTransaction(transactionId: string): Promise<APIResponse<unknown>> {
+        const res = await api.get(`/api/v1/transaction/${transactionId}`);
+        return res.data;
     }
 
-    static approveTransaction(transactionId: string) {
-        return api.patch(`/api/v1/transaction/${transactionId}/approve`, {});
+    static async approveTransaction(transactionId: string): Promise<APIResponse<unknown>> {
+        const res = await api.patch(`/api/v1/transaction/${transactionId}/approve`, {});
+        return res.data;
     }
 
-    static declineTransaction(transactionId: string) {
-        return api.patch(`/api/v1/transaction/${transactionId}/decline`, {});
+    static async declineTransaction(transactionId: string): Promise<APIResponse<unknown>> {
+        const res = await api.patch(`/api/v1/transaction/${transactionId}/decline`, {});
+        return res.data;
     }
 
-    static getWalletHistory(customerId: string, params: PaginatedQuery) {
-        return api.get(`/api/v1/transaction/wallet-history/${customerId}`, { params });
+    static async getWalletHistory(customerId: string, params: PaginatedQuery): Promise<APIResponse<unknown>> {
+        const res = await api.get(`/api/v1/transaction/wallet-history/${customerId}`, { params });
+        return res.data;
     }
 }

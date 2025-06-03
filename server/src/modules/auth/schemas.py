@@ -120,12 +120,7 @@ class SocioUserCreateModel(BaseModel):
 
 class UserLoginModel(BaseModel):
     email: str = Field(max_length=40, examples=["owhiroroeghele@gmail.com"])
-    password: str = Field(
-        min_length=8,
-        description="Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number.",
-        title="Password",
-        examples=["Cleave@12345"],
-    )
+    password: str = Field(title="Password", examples=["Cleave@12345"])
 
 
 class SendPhoneVerificationCodeModel(BaseModel):

@@ -26,10 +26,37 @@ export const PERMISSION_VALUES = {
 };
 
 export const ROUTES = {
-    SIGNIN: "/",
-    DASHBOARD: "/dashboard",
-    USERS: "/users",
+    DASHBOARD: "/",
+    SIGNIN: "/signin",
+    FORGOT_PASSWORD: "/reset-password",
+    CUSTOMERS: "/customers",
     TRANSACTIONS: "/transactions",
     PROFILE: "/profile",
-    SETTINGS: "/settings"
+    SETTINGS: "/settings",
+    USERS: "/users"
+};
+
+export const formatCurrency = (value: number, currency = "₦") => {
+    return `${currency} ${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}`;
+};
+
+export const formatCurrencyShort = (value: number = 0, currency = "₦") => {
+    const absValue = Math.abs(value);
+    let formatted = "";
+    if (absValue >= 1e12) {
+        formatted = (value / 1e12).toFixed(2).replace(/\.00$/, "") + "T";
+    } else if (absValue >= 1e9) {
+        formatted = (value / 1e9).toFixed(2).replace(/\.00$/, "") + "B";
+    } else if (absValue >= 1e6) {
+        formatted = (value / 1e6).toFixed(2).replace(/\.00$/, "") + "M";
+    } else if (absValue >= 1e3) {
+        formatted = (value / 1e3).toFixed(2).replace(/\.00$/, "") + "K";
+    } else {
+        formatted = value.toFixed(2).replace(/\.00$/, "");
+    }
+    return `${currency} ${formatted}`;
+};
+
+export const formatNumber = (value: number | string) => {
+    return new Intl.NumberFormat().format(Number(value));
 };

@@ -52,7 +52,7 @@ async def list_customers(
     result = await service.paginated_get_customers(
         business_id=user_data.business_id, page=page, limit=limit
     )
-    return result
+    return response(data=result)
 
 
 @customer_router.get(
