@@ -114,14 +114,26 @@ class TransactionService:
 
     async def paginated_get_transactions(
         self,
+        page,
+        limit,
         business_id: Optional[uuid.UUID] = None,
         status: Optional[str] = None,
         description: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        page: int = 1,
-        limit: int = 10,
     ):
+        if not page or not limit:
+            stmt = select(Transaction).where(Transaction.status == status)
+            result = await self.session.exec(stmt)
+            transactions = result.fetchall()
+
+            return {
+                "transactions": [
+                    await self._format_response(transaction)
+                    for transaction in transactions
+                ]
+            }
+
         offset = (page - 1) * limit
         stmt = select(Transaction)
         count_stmt = select(func.count()).select_from(Transaction)
@@ -214,7 +226,7 @@ class TransactionService:
                 datetime.strptime(submitted_next_payment, "%Y-%m-%d")
                 if submitted_next_payment
                 else calculate_next_payment_date(
-                    next_payment_date=customer.next_payment_date,
+                    current_date=customer.next_payment_date,
                     frequency=customer.payment_frequency,
                 )
             )
@@ -235,14 +247,14 @@ class TransactionService:
                 else 0.0
             )
 
-        await self.session.commit()
+            await self._insert_into_wallet(
+                customer_id=customer_id,
+                credit=credit,
+                debit=debit,
+                description=transaction.description,
+            )
 
-        await self._insert_into_wallet(
-            customer_id=customer_id,
-            credit=credit,
-            debit=debit,
-            description=transaction.description,
-        )
+        await self.session.commit()
 
         return await self._format_response(transaction)
 

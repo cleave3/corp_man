@@ -14,11 +14,15 @@ import Transactions from "./pages/Transactions/Transactions";
 import { useTheme } from "./context/ThemeContext";
 import Settings from "./pages/Settings/Settings";
 import Users from "./pages/Users/Users";
+import PendingTransactions from "./pages/Transactions/PendingTransactions";
+import NewTransaction from "./pages/Transactions/NewTransaction";
 
 const protected_routes = [
     { Path: ROUTES.DASHBOARD, element: <PrivateRoute children={<Home />} />, isIndex: true },
     { Path: ROUTES.CUSTOMERS, element: <PrivateRoute children={<Customers />} />, isIndex: false },
-    { Path: ROUTES.TRANSACTIONS, element: <PrivateRoute children={<Transactions />} />, isIndex: false },
+    { Path: ROUTES.ALL_TRANSACTIONS, element: <PrivateRoute children={<Transactions />} />, isIndex: false },
+    { Path: ROUTES.PENDING_TRANSACTIONS, element: <PrivateRoute children={<PendingTransactions />} />, isIndex: false },
+    { Path: ROUTES.NEW_TRANSACTIONS, element: <PrivateRoute children={<NewTransaction />} />, isIndex: false },
     { Path: ROUTES.SETTINGS, element: <PrivateRoute children={<Settings />} />, isIndex: false },
     { Path: ROUTES.USERS, element: <PrivateRoute children={<Users />} />, isIndex: false },
     { Path: ROUTES.PROFILE, element: <PrivateRoute children={<UserProfiles />} />, isIndex: false }
@@ -48,7 +52,7 @@ const App = () => {
                 </Routes>
             </Router>
             <ToastContainer
-                position="top-right"
+                position="bottom-center"
                 autoClose={5000}
                 hideProgressBar
                 newestOnTop

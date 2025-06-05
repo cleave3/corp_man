@@ -30,7 +30,9 @@ export const ROUTES = {
     SIGNIN: "/signin",
     FORGOT_PASSWORD: "/reset-password",
     CUSTOMERS: "/customers",
-    TRANSACTIONS: "/transactions",
+    NEW_TRANSACTIONS: "/transactions/new",
+    ALL_TRANSACTIONS: "/transactions",
+    PENDING_TRANSACTIONS: "/transactions/pending",
     PROFILE: "/profile",
     SETTINGS: "/settings",
     USERS: "/users"

@@ -109,6 +109,14 @@ export const useCustomers = (params: PaginatedQuery) => {
         queryFn: () => ApiService.listCustomers(params)
     });
 };
+
+export const useGetAllCustomers = () => {
+    return useQuery({
+        queryKey: ["allcustomers"],
+        queryFn: () => ApiService.getAllCustomers()
+    });
+};
+
 export const useGetCustomerById = (customerId: string) => {
     return useQuery({ queryKey: ["customer", customerId], queryFn: () => ApiService.getCustomerById(customerId) });
 };
@@ -130,16 +138,53 @@ export const useTransactions = (params: PaginatedQuery) => {
     });
 };
 
+export const usePendingTransactions = () => {
+    return useQuery({
+        queryKey: ["pendingTransactions"],
+        queryFn: () => ApiService.listTransactions({ status: "pending" })
+    });
+};
+
 export const useGetTransaction = (transactionId: string) => {
     return useQuery({ queryKey: ["transaction", transactionId], queryFn: () => ApiService.getTransaction(transactionId) });
 };
 
 export const useApproveTransaction = () => {
-    return useMutation({ mutationFn: (transactionId: string) => ApiService.approveTransaction(transactionId) });
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (transactionId: string) => {
+            await toast.promise(ApiService.approveTransaction(transactionId), {
+                pending: "processing...",
+                success: "Transaction approved successfully",
+                error: "operation unsuccessful"
+            });
+        },
+        onSuccess() {
+            queryClient.invalidateQueries({ queryKey: ["pendingTransactions"] });
+        },
+        onError: (error) => {
+            toast.error(error.message);
+        }
+    });
 };
 
 export const useDeclineTransaction = () => {
-    return useMutation({ mutationFn: (transactionId: string) => ApiService.declineTransaction(transactionId) });
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (transactionId: string) => {
+            await toast.promise(ApiService.declineTransaction(transactionId), {
+                pending: "processing...",
+                success: "Transaction declined successfully",
+                error: "operation unsuccessful"
+            });
+        },
+        onSuccess() {
+            queryClient.invalidateQueries({ queryKey: ["pendingTransactions"] });
+        },
+        onError: (error) => {
+            toast.error(error.message);
+        }
+    });
 };
 
 export const useWalletHistory = (customerId: string, params: PaginatedQuery) => {

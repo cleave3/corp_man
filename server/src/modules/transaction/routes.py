@@ -79,9 +79,9 @@ async def get_transaction(
 
 @transaction_router.get("", status_code=status.HTTP_200_OK)
 async def list_transactions(
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     status: Optional[str] = None,
-    page: int = Query(1, ge=1),
-    limit: int = Query(10, gt=0),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     service: TransactionService = Depends(get_transaction_service),

@@ -27,7 +27,12 @@ const navItems: NavItem[] = [
     {
         icon: <PageIcon />,
         name: "Transactions",
-        path: ROUTES.TRANSACTIONS
+        // path: ROUTES.ALL_TRANSACTIONS,
+        subItems: [
+            { name: "Pending", path: ROUTES.PENDING_TRANSACTIONS },
+            { name: "All Transactions", path: ROUTES.ALL_TRANSACTIONS },
+            { name: "New Transaction", path: ROUTES.NEW_TRANSACTIONS },
+        ]
     },
     {
         name: "Team",

@@ -141,6 +141,26 @@ class CustomerService:
             "customers": customers,
         }
 
+    async def get_customers(self, business_id: Optional[uuid.UUID] = None) -> dict:
+        stmt = select(Customer).order_by(Customer.created_at.desc())
+        if business_id:
+            stmt = stmt.where(Customer.business_id == business_id)
+        result = await self.session.exec(stmt)
+        customers = result.fetchall()
+
+        transaction_service = get_transaction_service(session=self.session)
+
+        customers = [
+            {
+                "id": customer.id,
+                "name": f"{customer.first_name} {customer.last_name}",
+                "phone": customer.phone,
+                "balance": await transaction_service.get_wallet_balance(customer.id),
+            }
+            for customer in customers
+        ]
+        return customers
+
 
 def get_customer_service(
     session: AsyncSession = Depends(get_session),

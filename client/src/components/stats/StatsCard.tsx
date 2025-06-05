@@ -1,8 +1,27 @@
+import { ReactNode } from "react";
 import { GroupIcon } from "../../icons";
+import { StaticFunc } from "../../api/types";
 
-const StatsCard = ({ title, isLoading = false, value, icon = <GroupIcon className="size-6 text-white/90 dark:text-black" /> }) => {
+interface StatsCardprops {
+    title: string;
+    isLoading?: boolean;
+    value?: string;
+    icon?: ReactNode;
+    onClick?: StaticFunc;
+}
+
+const StatsCard = ({
+    title,
+    isLoading = false,
+    value,
+    icon = <GroupIcon className="size-6 text-white/90 dark:text-black" />,
+    onClick
+}: StatsCardprops) => {
     return (
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] md:p-5">
+        <div
+            onClick={onClick}
+            className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] md:p-5 cursor-pointer"
+        >
             <div className="flex items-center justify-center w-12 h-12 bg-blue-600 rounded-xl dark:bg-white">{icon}</div>
 
             <div className="flex items-end justify-between mt-4">

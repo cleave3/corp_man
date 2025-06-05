@@ -93,7 +93,7 @@ export interface CreateCustomerRequest {
     last_name: string;
     email: string;
     phone: string;
-    image_url: string;
+    image_url?: string;
     address: string;
     payment_frequency: string;
     next_payment_date: string;
@@ -106,9 +106,8 @@ export interface CreateTransactionRequest {
     amount: number;
     transaction_type: string;
     description: string;
-    meta_data: {
-        customer_id: string;
-        next_payment_date: string;
+    meta_data?: {
+        [x: string]: string;
     };
 }
 
@@ -219,7 +218,8 @@ export type Transaction = {
     amount: number;
     status: "cancelled" | "completed" | "pending";
     meta_data: {
-        customer_id: string;
+        [x: string]: string;
+        // customer_id: string;
     };
     number_of_required_approval: number;
     updated_at: string;

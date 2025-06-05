@@ -32,7 +32,7 @@ const ConfirmationModal: React.FC<Props> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-99999 flex items-center justify-center bg-black/40 backdrop-blur-sm">
             <div className="bg-white dark:bg-zinc-800 w-full max-w-md mx-auto rounded-2xl shadow-xl transform transition-all scale-100 opacity-100 animate-fadeIn p-6">
                 <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{title}</h2>
                 <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{message}</p>

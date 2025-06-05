@@ -30,7 +30,7 @@ import {
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
-const api: AxiosInstance = axios.create({ baseURL: BASE_URL, withCredentials: true });
+const api: AxiosInstance = axios.create({ baseURL: BASE_URL });
 
 api.interceptors.request.use((config) => {
     const token = Cookies.get("access_token");
@@ -178,13 +178,21 @@ export default class ApiService {
 
     // Customer
     static async createCustomer(data: CreateCustomerRequest): Promise<APIResponse<unknown>> {
-        const res = await api.post("/api/v1/customer", data);
-        return res.data;
+        try {
+            const res = await api.post("/api/v1/customer", data);
+            return res.data;
+        } catch (error) {
+            throw error?.response?.data;
+        }
     }
 
     static async listCustomers(params: PaginatedQuery): Promise<PaginatedResponsePayload<Customer[], "customers">> {
         const res = await api.get("/api/v1/customer", { params });
-        console.log({ data: res.data });
+        return res.data;
+    }
+
+    static async getAllCustomers(): Promise<APIResponse<{ id: string; name: string; phone: string; balance: number }[]>> {
+        const res = await api.get("/api/v1/customer/all");
         return res.data;
     }
 
@@ -194,14 +202,22 @@ export default class ApiService {
     }
 
     static async updateCustomer(customerId: string, data: UpdateCustomerRequest): Promise<APIResponse<unknown>> {
-        const res = await api.patch(`/api/v1/customer/${customerId}`, data);
-        return res.data;
+        try {
+            const res = await api.patch(`/api/v1/customer/${customerId}`, data);
+            return res.data;
+        } catch (error) {
+            throw error?.response?.data;
+        }
     }
 
     // Transactions
     static async createTransaction(data: CreateTransactionRequest): Promise<APIResponse<unknown>> {
-        const res = await api.post("/api/v1/transaction", data);
-        return res.data;
+        try {
+            const res = await api.post("/api/v1/transaction", data);
+            return res.data;
+        } catch (error) {
+            throw error?.response?.data;
+        }
     }
 
     static async listTransactions(params: PaginatedQuery): Promise<PaginatedResponsePayload<Transaction[], "transactions">> {
@@ -215,13 +231,21 @@ export default class ApiService {
     }
 
     static async approveTransaction(transactionId: string): Promise<APIResponse<unknown>> {
-        const res = await api.patch(`/api/v1/transaction/${transactionId}/approve`, {});
-        return res.data;
+        try {
+            const res = await api.patch(`/api/v1/transaction/${transactionId}/approve`, {});
+            return res.data;
+        } catch (error) {
+            throw error?.response?.data;
+        }
     }
 
     static async declineTransaction(transactionId: string): Promise<APIResponse<unknown>> {
-        const res = await api.patch(`/api/v1/transaction/${transactionId}/decline`, {});
-        return res.data;
+        try {
+            const res = await api.patch(`/api/v1/transaction/${transactionId}/decline`, {});
+            return res.data;
+        } catch (error) {
+            throw error?.response?.data;
+        }
     }
 
     static async getWalletHistory(customerId: string, params: PaginatedQuery): Promise<APIResponse<unknown>> {
