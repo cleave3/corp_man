@@ -120,22 +120,22 @@ const Pagination: React.FC<{ page: number; limit: number; total: number; loaded:
 }) => {
     return (
         <div className="flex items-center justify-end gap-4 px-6 py-4">
-            <div className="text-gray-500 text-theme-xs dark:text-gray-400">
+            <div className="text-gray-500 text-theme-xs dark:text-gray-200">
                 {total === 0 ? "No records" : `Showing ${loaded} of ${total}`}
             </div>
             <div className="flex items-center gap-2">
                 <button
-                    className="px-3 py-1 rounded border border-gray-200 bg-white text-gray-600 text-theme-xs hover:bg-gray-50 disabled:opacity-50 dark:bg-gray-800 dark:border-white/[0.1]"
+                    className="px-3 py-1 rounded border border-gray-200 bg-white text-gray-600 text-theme-xs hover:bg-gray-50 disabled:opacity-50 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100 dark:hover:bg-gray-800"
                     disabled={page === 1}
                     onClick={prevFunc}
                 >
                     Previous
                 </button>
-                <span className="text-gray-500 text-theme-xs dark:text-gray-400">
+                <span className="text-gray-500 text-theme-xs dark:text-gray-200">
                     Page {total === 0 ? 0 : page} of {Math.max(1, Math.ceil(total / limit))}
                 </span>
                 <button
-                    className="px-3 py-1 rounded border border-gray-200 bg-white text-gray-600 text-theme-xs hover:bg-gray-50 disabled:opacity-50 dark:bg-gray-800 dark:border-white/[0.1]"
+                    className="px-3 py-1 rounded border border-gray-200 bg-white text-gray-600 text-theme-xs hover:bg-gray-50 disabled:opacity-50 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100 dark:hover:bg-gray-800"
                     disabled={page >= Math.ceil(total / limit) || total === 0}
                     onClick={nextFunc}
                 >

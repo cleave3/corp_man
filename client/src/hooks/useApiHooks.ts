@@ -105,7 +105,7 @@ export const useCreateCustomer = () => useMutation({ mutationFn: ApiService.crea
 
 export const useCustomers = (params: PaginatedQuery) => {
     return useQuery({
-        queryKey: ["customers", params.page],
+        queryKey: ["customers", params.page, params.search],
         queryFn: () => ApiService.listCustomers(params)
     });
 };
@@ -189,7 +189,7 @@ export const useDeclineTransaction = () => {
 
 export const useWalletHistory = (customerId: string, params: PaginatedQuery) => {
     return useQuery({
-        queryKey: ["walletHistory", customerId, params.page],
+        queryKey: ["walletHistory", customerId, params.page, params.start_date, params.end_date],
         queryFn: () => ApiService.getWalletHistory(customerId, params)
     });
 };

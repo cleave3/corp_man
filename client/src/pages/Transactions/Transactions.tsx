@@ -57,20 +57,26 @@ const Transactions = () => {
                 />
                 <button
                     type="button"
-                    className="p-2 rounded hover:bg-gray-100 dark:hover:bg-dark-800 transition"
+                    className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                     onClick={() => setShowFilters((prev) => !prev)}
                     aria-label="Show Filters"
                 >
-                    {/* Filter Icon (SVG) */}
-                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                        <path
-                            d="M3 5h18M6 12h12M10 19h4"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        />
-                    </svg>
+                        {/* Filter Icon (SVG) */}
+                        <svg
+                            width="20"
+                            height="20"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            className="text-gray-700 dark:text-white"
+                        >
+                            <path
+                                d="M3 5h18M6 12h12M10 19h4"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
                 </button>
 
                 <Dropdown isOpen={showFilters} onClose={() => setShowFilters((prev) => !prev)} className="p-2">
@@ -121,9 +127,19 @@ const Transactions = () => {
                     </div>
                 </Dropdown>
             </div>
-            {/* </div> */}
+
+            <div className="hidden lg:block max-w-full overflow-x-auto">
+                <Pagination
+                    loaded={pageData.length}
+                    total={totalData}
+                    page={currentPage}
+                    limit={pageSize}
+                    nextFunc={() => setFilterData((prev) => ({ ...prev, page: prev.page + 1 }))}
+                    prevFunc={() => setFilterData((prev) => ({ ...prev, page: prev.page - 1 }))}
+                />
+            </div>
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
-                <div className="hidden md:block max-w-full overflow-x-auto">
+                <div className="hidden lg:block max-w-full overflow-x-auto">
                     <div className="min-w-[1102px]">
                         <Table>
                             {/* Table Header */}
@@ -165,7 +181,10 @@ const Transactions = () => {
                                     >
                                         <TableCell className="">{transaction?.id}</TableCell>
                                         <TableCell className="">{formatCurrency(transaction?.amount)}</TableCell>
-                                        <TableCell className="">{transaction?.transaction_type}</TableCell>
+                                        <TableCell>
+                                            {transaction?.transaction_type}
+                                            {transaction?.meta_data?.customer ? ` (${transaction?.meta_data?.customer})` : ""}
+                                        </TableCell>
                                         <TableCell className="">
                                             <Badge
                                                 variant="light"
@@ -188,19 +207,9 @@ const Transactions = () => {
                         </Table>
                     </div>
                 </div>
-                <div className="hidden md:block max-w-full overflow-x-auto">
-                    <Pagination
-                        loaded={pageData.length}
-                        total={totalData}
-                        page={currentPage}
-                        limit={pageSize}
-                        nextFunc={() => setFilterData((prev) => ({ ...prev, page: prev.page + 1 }))}
-                        prevFunc={() => setFilterData((prev) => ({ ...prev, page: prev.page - 1 }))}
-                    />
-                </div>
 
                 {/* Mobile Cards */}
-                <div className="block md:hidden px-2 py-4">
+                <div className="block lg:hidden px-2 py-4">
                     <Pagination
                         loaded={pageData.length}
                         total={totalData}

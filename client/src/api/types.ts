@@ -117,6 +117,7 @@ export interface PaginatedQuery {
     limit?: number;
     start_date?: string;
     end_date?: string;
+    search?: string;
 }
 
 export type SignInResponseData = {
@@ -271,3 +272,15 @@ export type TransactionYearStats = {
     month: string;
     amount: number;
 }[];
+
+export type WalletHistory = PaginatedResponsePayload<
+    {
+        customer_id: string;
+        debit: number;
+        description: string;
+        id: string;
+        credit: number;
+        created_at: string;
+    }[],
+    "wallet_history"
+>;

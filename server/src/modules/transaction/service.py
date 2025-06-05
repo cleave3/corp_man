@@ -280,31 +280,29 @@ class TransactionService:
         page: int = 1,
         limit: int = 10,
     ):
-        stmt = select(Wallet).where(Wallet.customer_id == customer_id)
+        print(start_date, end_date)
+        offset = (page - 1) * limit
+        stmt = (
+            select(Wallet)
+            .where(Wallet.customer_id == customer_id)
+        )
+        count_stmt = select(func.count()).select_from(Wallet).where(Wallet.customer_id == customer_id)
         if start_date:
             stmt = stmt.where(Wallet.created_at >= start_date)
+            count_stmt = count_stmt.where(Wallet.created_at >= start_date)
         if end_date:
             stmt = stmt.where(Wallet.created_at <= end_date)
+            count_stmt = count_stmt.where(Wallet.created_at <= end_date)
 
         # Use func.count for total
-        count_stmt = select(func.count()).select_from(stmt.subquery())
-        total_result = await self.session.exec(count_stmt)
-        total = total_result.one() or 0
-
-        stmt = stmt.offset((page - 1) * limit).limit(limit)
+        stmt = stmt.offset(offset).limit(limit).order_by(Wallet.created_at.desc())
         result = await self.session.exec(stmt)
+        count_result = await self.session.exec(count_stmt)
         wallets = result.fetchall()
-
-        wallets = [
-            {
-                **wallet.model_dump(),
-                "balance": await self.get_wallet_balance(wallet.customer_id),
-            }
-            for wallet in wallets
-        ]
+        total_count = count_result.one()
 
         return {
-            "total": total,
+            "total": total_count,
             "page": page,
             "limit": limit,
             "wallet_history": wallets,

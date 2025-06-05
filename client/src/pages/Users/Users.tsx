@@ -23,7 +23,7 @@ const Users = () => {
             <PageBreadcrumb pageTitle={`Team`} />
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
                 <div className="max-w-full overflow-x-auto">
-                    <div className="min-w-[1102px] hidden sm:block">
+                    <div className="min-w-[1102px] hidden lg:block">
                         {/* Desktop Table */}
                         <Table>
                             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -75,7 +75,7 @@ const Users = () => {
                         </Table>
                     </div>
                     {/* Mobile View */}
-                    <div className="block sm:hidden">
+                    <div className="block lg:hidden">
                         {data?.data.map((user) => (
                             <div
                                 key={user.uid}

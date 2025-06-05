@@ -1,6 +1,5 @@
 import uuid
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from src.common.utilities import response
 from src.middleware.dependencies import PermissionChecker
 from .schema import CustomerCreate, CustomerUpdate
@@ -32,6 +31,7 @@ async def create_customer(
 async def list_customers(
     page: int = Query(1, ge=1),
     limit: int = Query(10, gt=0),
+    search: str = Query(),
     service: CustomerService = Depends(get_customer_service),
     user_data=Depends(
         PermissionChecker(
@@ -40,7 +40,7 @@ async def list_customers(
     ),
 ):
     result = await service.paginated_get_customers(
-        business_id=user_data.business_id, page=page, limit=limit
+        business_id=user_data.business_id, page=page, limit=limit, search=search
     )
     return response(data=result)
 
@@ -97,4 +97,3 @@ async def update_customer(
     updated = await service.update_customer(customer_id, data)
 
     return response(data=updated, message="Customer updated successfully")
-

@@ -92,7 +92,11 @@ async def list_transactions(
     ),
 ):
     start_dt = datetime.fromisoformat(start_date) if start_date else None
-    end_dt = datetime.fromisoformat(end_date) if end_date else None
+    if end_date:
+        end_dt = datetime.fromisoformat(end_date)
+        end_dt = end_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+    else:
+        end_dt = None
 
     transactions = await service.paginated_get_transactions(
         business_id=user_data.business_id,
@@ -156,11 +160,18 @@ async def get_wallet_balance(
     end_date: Optional[str] = None,
     service: TransactionService = Depends(get_transaction_service),
 ):
+    start_dt = datetime.fromisoformat(start_date) if start_date else None
+    if end_date:
+        end_dt = datetime.fromisoformat(end_date)
+        end_dt = end_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+    else:
+        end_dt = None
+
     wallet = await service.get_wallet_by_customer(
         customer_id=customer_id,
         page=page,
         limit=limit,
-        start_date=start_date,
-        end_date=end_date,
+        start_date=start_dt,
+        end_date=end_dt,
     )
     return response(data=wallet)

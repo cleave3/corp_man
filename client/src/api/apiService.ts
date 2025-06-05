@@ -25,7 +25,8 @@ import {
     Auth,
     OverviewStats,
     TransactionYearStats,
-    TransactionInitiatorStats
+    TransactionInitiatorStats,
+    WalletHistory
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
@@ -248,7 +249,7 @@ export default class ApiService {
         }
     }
 
-    static async getWalletHistory(customerId: string, params: PaginatedQuery): Promise<APIResponse<unknown>> {
+    static async getWalletHistory(customerId: string, params: PaginatedQuery): Promise<WalletHistory> {
         const res = await api.get(`/api/v1/transaction/wallet-history/${customerId}`, { params });
         return res.data;
     }

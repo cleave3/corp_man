@@ -58,10 +58,10 @@ const PendingTransactions = () => {
             <PageBreadcrumb pageTitle={`Pending Transactions`} />
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
                 {/* Desktop/Tablets Table */}
-                {pageData.length === 0 ? (
-                    <div className="text-center text-gray-400 dark:text-gray-500 py-8">No pending transactions found.</div>
-                ) : (
-                    <div className="hidden md:block max-w-full overflow-x-auto min-h-screen">
+                <div className="hidden lg:block max-w-full overflow-x-auto min-h-screen">
+                    {pageData.length === 0 ? (
+                        <div className="text-center text-gray-400 dark:text-gray-500 py-8">No pending transactions found.</div>
+                    ) : (
                         <div className="min-w-[1102px]">
                             <Table>
                                 {/* Table Header */}
@@ -156,10 +156,10 @@ const PendingTransactions = () => {
                                 </TableBody>
                             </Table>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
                 {/* Mobile Cards */}
-                <div className="block md:hidden px-2 py-4">
+                <div className="block lg:hidden px-2 py-4">
                     {pageData.length === 0 ? (
                         <div className="text-center text-gray-400 dark:text-gray-500 py-8">No pending transactions found.</div>
                     ) : (

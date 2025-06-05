@@ -42,6 +42,7 @@ class CustomerService:
                 meta_data={
                     "customer_id": str(customer.id),
                     "comment": "opening_deposit",
+                    "customer": f"{customer.first_name} {customer.last_name or ''}",
                 },
             ),
         )
@@ -103,14 +104,28 @@ class CustomerService:
         return True
 
     async def paginated_get_customers(
-        self, business_id: Optional[uuid.UUID] = None, page: int = 1, limit: int = 10
+        self,
+        business_id: Optional[uuid.UUID] = None,
+        page: int = 1,
+        limit: int = 10,
+        search: str = None,
     ) -> dict:
         stmt = select(Customer).order_by(Customer.created_at.desc())
+        count_stmt = select(func.count()).select_from(Customer)
+
         if business_id:
             stmt = stmt.where(Customer.business_id == business_id)
-        count_stmt = select(func.count()).select_from(Customer)
-        if business_id:
             count_stmt = count_stmt.where(Customer.business_id == business_id)
+
+        if search:
+            search_filter = (
+                (Customer.first_name.ilike(f"%{search}%"))
+                | (Customer.last_name.ilike(f"%{search}%"))
+                | (Customer.email.ilike(f"%{search}%"))
+            )
+            stmt = stmt.where(search_filter)
+            count_stmt = count_stmt.where(search_filter)
+
         total_result = await self.session.exec(count_stmt)
         total_count = total_result.one()
         stmt = stmt.offset((page - 1) * limit).limit(limit)
@@ -130,7 +145,6 @@ class CustomerService:
                     else {}
                 ),
                 "balance": await transaction_service.get_wallet_balance(customer.id),
-                # "wallet_history": customer.wallet_history,
             }
             for customer in customers
         ]

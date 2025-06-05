@@ -2,12 +2,13 @@
 
 - approve transactions [DONE]
 - decline transactions  [DONE]
-- Wallet History
-- create customer [DONE]
-- Edit customer
 - Ensure proper mobile responsiveness  [DONE]
+- create customer [DONE]
+- Wallet History [DONE]
+- Edit customer  [DONE]
 - Add user
 - Edit user
+- search customer [DONE]
 - Notification
 - Push notification
 - Access control
