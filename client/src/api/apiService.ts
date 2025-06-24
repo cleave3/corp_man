@@ -22,11 +22,11 @@ import {
     PaginatedResponsePayload,
     Transaction,
     Business,
-    Auth,
     OverviewStats,
     TransactionYearStats,
     TransactionInitiatorStats,
-    WalletHistory
+    WalletHistory,
+    UserPermissions
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
@@ -101,7 +101,16 @@ export default class ApiService {
     }
 
     static async registerMember(data: RegisterMemberRequest): Promise<APIResponse<unknown>> {
-        const res = await api.post("/api/v1/auth/register-member", data);
+        try {
+            const res = await api.post("/api/v1/auth/register-member", data);
+            return res.data;
+        } catch (error) {
+            throw error?.response?.data;
+        }
+    }
+
+    static async getUserPermissions(): Promise<APIResponse<UserPermissions>> {
+        const res = await api.get("/api/v1/auth/user-permissions");
         return res.data;
     }
 
@@ -120,7 +129,7 @@ export default class ApiService {
         return res.data;
     }
 
-    static async getUsers(): Promise<APIResponse<Auth[]>> {
+    static async getUsers(): Promise<APIResponse<AuthUser[]>> {
         const res = await api.get("/api/v1/auth/users");
         return res.data;
     }
@@ -131,13 +140,21 @@ export default class ApiService {
     }
 
     static async updateUserStatus(userId: string, data: UpdateStatusRequest): Promise<APIResponse<unknown>> {
-        const res = await api.patch(`/api/v1/auth/update-status/${userId}`, data);
-        return res.data;
+        try {
+            const res = await api.patch(`/api/v1/auth/update-status/${userId}`, data);
+            return res.data;
+        } catch (error) {
+            throw error?.response?.data;
+        }
     }
 
     static async updateUserPermissions(userId: string, data: UpdatePermissionsRequest): Promise<APIResponse<unknown>> {
-        const res = await api.patch(`/api/v1/auth/update-permissions/${userId}`, data);
-        return res.data;
+        try {
+            const res = await api.patch(`/api/v1/auth/update-permissions/${userId}`, data);
+            return res.data;
+        } catch (error) {
+            throw error?.response?.data;
+        }
     }
 
     // Analytics

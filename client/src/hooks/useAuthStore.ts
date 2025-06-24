@@ -23,15 +23,23 @@ export const useAuthStore = create<AuthState>((set) => {
             set({ user: user ?? null });
         },
         logout: async () => {
-            await toast.promise(ApiService.logout(), {
-                pending: "Logging out...",
-                success: "Logged out successfully!",
-                error: "Logout failed!"
-            });
-            Cookies.remove("access_token");
-            Cookies.remove("refresh_token");
-            Cookies.remove("auth_user");
-            set({ user: null });
+            try {
+                await toast.promise(ApiService.logout(), {
+                    pending: "Logging out...",
+                    success: "Logged out successfully!"
+                    // error: "Logout failed!"
+                });
+                Cookies.remove("access_token");
+                Cookies.remove("refresh_token");
+                Cookies.remove("auth_user");
+                set({ user: null });
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (error) {
+                Cookies.remove("access_token");
+                Cookies.remove("refresh_token");
+                Cookies.remove("auth_user");
+                set({ user: null });
+            }
         }
     };
 });

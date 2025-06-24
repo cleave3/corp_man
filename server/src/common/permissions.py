@@ -46,6 +46,10 @@ admin_permission_list = {
 user_permission_actions = {
     "dashboard_overview": "dashboard.overview",
     "dashboard_revenue": "dashboard.revenue",
+    "dashboard_payouts": "dashboard.payouts",
+    "dashboard_chart": "dashboard.chart",
+    "dashboard_customers": "dashboard.customers",
+    "dashboard_topcollectors": "dashboard.topcollectors",
     "dashboard_target": "dashboard.target",
     "dashboard_due_payments": "dashboard.due_payments",
     "dashboard_notifications": "dashboard.notifications",
@@ -68,39 +72,10 @@ user_permission_actions = {
     "approve_transaction": "transaction.approve",
     "view_settings": "settings.view",
     "modify_settings": "settings.modify",
+    "staff_performance": "metrics.staff_performance",
 }
 
 user_permission_list = {
-    "business": [
-        {
-            "name": "view business information",
-            "action": user_permission_actions["view_business"],
-        },
-        {
-            "name": "update business information",
-            "action": user_permission_actions["update_business"],
-        },
-        {
-            "name": "update business preferences",
-            "action": user_permission_actions["update_business_preferences"],
-        },
-    ],
-    "customers": [
-        {
-            "name": "update customers",
-            "action": user_permission_actions["update_customers"],
-        },
-        {
-            "name": "create customers",
-            "action": user_permission_actions["create_customers"],
-        },
-        {"name": "view customers", "action": user_permission_actions["view_customers"]},
-        {
-            "name": "delete customers",
-            "action": user_permission_actions["delete_customers"],
-        },
-        {"name": "view balances", "action": user_permission_actions["view_balances"]},
-    ],
     "dashboard": [
         {
             "name": "view overview",
@@ -127,12 +102,21 @@ user_permission_list = {
             "action": user_permission_actions["dashboard_pending"],
         },
     ],
-    "settings": [
-        {"name": "View settings", "action": user_permission_actions["view_settings"]},
+    "customers": [
         {
-            "name": "Modify settings",
-            "action": user_permission_actions["modify_settings"],
+            "name": "update customers",
+            "action": user_permission_actions["update_customers"],
         },
+        {
+            "name": "create customers",
+            "action": user_permission_actions["create_customers"],
+        },
+        {"name": "view customers", "action": user_permission_actions["view_customers"]},
+        {
+            "name": "delete customers",
+            "action": user_permission_actions["delete_customers"],
+        },
+        {"name": "view balances", "action": user_permission_actions["view_balances"]},
     ],
     "transaction": [
         {
@@ -152,11 +136,38 @@ user_permission_list = {
             "action": user_permission_actions["modify_transaction"],
         },
     ],
-    "user": [
+    "team": [
         {"name": "update user", "action": user_permission_actions["update_user"]},
         {"name": "create user", "action": user_permission_actions["create_user"]},
         {"name": "view user", "action": user_permission_actions["view_users"]},
         {"name": "delete user", "action": user_permission_actions["delete_user"]},
+    ],
+    "business": [
+        {
+            "name": "view business information",
+            "action": user_permission_actions["view_business"],
+        },
+        {
+            "name": "update business information",
+            "action": user_permission_actions["update_business"],
+        },
+        {
+            "name": "update business preferences",
+            "action": user_permission_actions["update_business_preferences"],
+        },
+    ],
+    "settings": [
+        {"name": "View settings", "action": user_permission_actions["view_settings"]},
+        {
+            "name": "Modify settings",
+            "action": user_permission_actions["modify_settings"],
+        },
+    ],
+    "metrics": [
+        {
+            "name": "Staff Performance",
+            "action": user_permission_actions["staff_performance"],
+        },
     ],
 }
 
@@ -185,4 +196,9 @@ root_user_permissions = [
     "settings.view",
     "settings.modify",
     "transaction.modify",
+    "dashboard.payouts",
+    "dashboard.chart",
+    "dashboard.customers",
+    "dashboard.topcollectors",
+    "metrics.staff_performance",
 ]

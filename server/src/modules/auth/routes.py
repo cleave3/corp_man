@@ -34,7 +34,7 @@ from src.middleware.dependencies import (
     PermissionChecker,
 )
 from src.common.errors import UserNotFound, ActionNotAllowed
-from src.common.permissions import user_permission_actions
+from src.common.permissions import user_permission_actions, user_permission_list
 from src.config.settings import Config
 from src.common.notification import MailData
 
@@ -57,6 +57,25 @@ async def register_team_member(
     )
 
     return response(data=member, message="Member add successfully")
+
+
+@auth_router.get(
+    "/user-permissions",
+    status_code=status.HTTP_200_OK,
+    dependencies=[
+        Depends(
+            PermissionChecker(
+                allowed_permissions=[
+                    user_permission_actions["create_user"],
+                    user_permission_actions["update_user"],
+                ]
+            )
+        )
+    ],
+)
+async def get_user_permissions():
+
+    return response(data=user_permission_list)
 
 
 @auth_router.patch(
@@ -292,7 +311,9 @@ async def get_current_user(
 
     auth = await auth_service.get_user_by_id(uid=token_data["user"]["uid"])
 
-    return response(data={**user.model_dump(), **auth.model_dump(exclude="password_hash")})
+    return response(
+        data={**user.model_dump(), **auth.model_dump(exclude="password_hash")}
+    )
 
 
 @auth_router.patch("/change-password")

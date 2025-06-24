@@ -4,7 +4,7 @@ import { useCustomers } from "../../hooks/useApiHooks";
 import { formatCurrency } from "../../utils";
 import { formatDate } from "../../utils/date";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import { PlusIcon, MagnifyingGlassIcon, ArrowPathIcon } from "@heroicons/react/24/solid";
+import { PlusIcon, MagnifyingGlassIcon, ArrowPathIcon, PencilIcon, ListBulletIcon } from "@heroicons/react/24/solid";
 import Button from "../../components/button/Button";
 import NewCustomer from "./NewCustomer";
 import { useModal } from "../../hooks/useModal";
@@ -249,6 +249,32 @@ const Customers = () => {
                                                 </span>
                                             </div>
                                         </div>
+                                    </div>
+                                    <div className="w-1/2 flex justify-end">
+                                        <Button
+                                            variant="ghost"
+                                            // size="icon"
+                                            className="p-1 h-7 w-7 mx-2"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setSelectedCustomer(customer);
+                                                openModal();
+                                            }}
+                                        >
+                                            <PencilIcon className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="secondary"
+                                            // size="icon"
+                                            className="p-1 h-7 w-7"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setSelectedCustomer(customer);
+                                                setDrawerOpen(true);
+                                            }}
+                                        >
+                                            <ListBulletIcon className="h-4 w-4" />
+                                        </Button>
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap gap-y-2 mb-2">

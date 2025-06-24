@@ -53,6 +53,7 @@ const App = () => {
             </Router>
             <ToastContainer
                 position="bottom-center"
+                style={{ zIndex: 999999999 }}
                 autoClose={5000}
                 hideProgressBar
                 newestOnTop

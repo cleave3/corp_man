@@ -284,3 +284,5 @@ export type WalletHistory = PaginatedResponsePayload<
     }[],
     "wallet_history"
 >;
+
+export type UserPermissions = Record<string, { name: string; action: string }[]>;

@@ -4,8 +4,6 @@ import { LoginUserRequest, PaginatedQuery, UpdateCustomerRequest, UpdatePermissi
 import ApiService from "../api/apiService";
 import { useAuthStore } from "./useAuthStore";
 
-// queryClient.invalidateQueries({ queryKey: ['todos'] })
-
 // Auth Hooks
 export const useLoginUser = () => {
     const login = useAuthStore((state) => state.login);
@@ -22,12 +20,16 @@ export const useLoginUser = () => {
     });
 };
 export const useSocioAuth = () => useMutation({ mutationFn: ApiService.socioAuth });
+
 export const useGetMe = () => {
     return useQuery({ queryKey: ["me"], queryFn: ApiService.getMe, refetchOnWindowFocus: true });
 };
 export const useRegisterMember = () => useMutation({ mutationFn: ApiService.registerMember });
+
 export const useResendVerification = () => useMutation({ mutationFn: ApiService.resendVerification });
+
 export const useChangePassword = () => useMutation({ mutationFn: ApiService.changePassword });
+
 export const useForgotPassword = () => {
     return useMutation({
         mutationFn: ApiService.forgotPassword,
@@ -40,15 +42,19 @@ export const useForgotPassword = () => {
     });
 };
 export const useGetUsers = () => useQuery({ queryKey: ["users"], queryFn: ApiService.getUsers });
+
 export const useGetUserById = (userId: string) => useQuery({ queryKey: ["user", userId], queryFn: () => ApiService.getUserById(userId) });
+
 export const useUpdateUserStatus = () =>
     useMutation({
         mutationFn: ({ userId, data }: { userId: string; data: UpdateStatusRequest }) => ApiService.updateUserStatus(userId, data)
     });
-export const useUpdateUserPermissions = () =>
-    useMutation({
+
+export const useUpdateUserPermissions = () => {
+    return useMutation({
         mutationFn: ({ userId, data }: { userId: string; data: UpdatePermissionsRequest }) => ApiService.updateUserPermissions(userId, data)
     });
+};
 
 // Analytics Hooks
 export const useOverviewStats = () => useQuery({ queryKey: ["overviewStats"], queryFn: ApiService.getOverviewStats });

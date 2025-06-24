@@ -13,3 +13,10 @@
 - Push notification
 - Access control
 - pwa
+- add daily to paymentfrequency
+- customerType = REGULAR | YEARLY COLLECTORS
+  - REGULAR [collect anytime]
+  - YEARLY COLLECTORS [365 days collection] [5% interest]
+- CUSTOMER CODE
+- Monthly Volume per staff [by year and month]
+- filter customer by date

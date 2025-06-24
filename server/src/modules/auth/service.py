@@ -3,6 +3,7 @@ from user_agents import parse
 from typing import List
 
 from fastapi import Depends, Request, status
+from src.common.notification import NotificationService
 from src.common.enums import UserTypeEnum
 from src.common.errors import (
     AccountNotVerified,
@@ -35,7 +36,7 @@ from .utils import (
 )
 
 # from .utils import get_password_hash
-from sqlmodel import select
+from sqlmodel import asc, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 
@@ -63,19 +64,34 @@ class AuthService(RedisService):
 
     async def get_users_by_business_id(self, business_id: str) -> List[Auth]:
         users = await self.session.exec(
-            select(Auth).where(Auth.business_id == business_id)
+            select(Auth).where(Auth.business_id == business_id).order_by(asc(Auth.name))
         )
-        return users.fetchall()
+        result = users.fetchall()
+
+        users_list = []
+        for user in result:
+            profile = await self.get_profile_by_uid(uid=user.uid)
+            if profile is not None:
+                user_dict = {
+                    **user.model_dump(),
+                    **profile.model_dump(exclude="password_hash"),
+                }
+                users_list.append(user_dict)
+        return users_list
 
     async def check_if_user_is_unique_user(self, email: str, phone: str) -> User | None:
-        email_exist = await self.get_user_by_email(email=email)
 
-        if email_exist:
-            raise UserAlreadyExists()
-        phone_exist = await self.get_user_by_phone(phone=phone)
+        if email:
+            email_exist = await self.get_user_by_email(email=email)
 
-        if phone_exist:
-            raise UserPhoneAlreadyExists()
+            if email_exist:
+                raise UserAlreadyExists()
+
+        if phone:
+            phone_exist = await self.get_user_by_phone(phone=phone)
+
+            if phone_exist:
+                raise UserPhoneAlreadyExists()
 
     async def get_profile_by_uid(self, uid: str) -> User | None:
         user = await self.session.exec(select(User).where(User.uid == uid))
@@ -91,8 +107,8 @@ class AuthService(RedisService):
         user_data: UserCreateModel,
     ) -> Auth:
 
-        email = user_data.email
-        phone = user_data.phone
+        email = user_data.email or None
+        phone = user_data.phone or None
 
         await self.check_if_user_is_unique_user(email=email, phone=phone)
 
@@ -124,6 +140,11 @@ class AuthService(RedisService):
             business_id=business_id,
             phone=phone,
             permissions=user_data.permissions,
+        )
+
+        NotificationService.send_sms(
+            telephone=phone,
+            message=f"Hello {user_data.first_name}, your account has been created successfully.\nUsername: {email or phone}\nPassword: {user_data.password}\nPlease keep this information secure.",
         )
 
         self.session.add(new_user)

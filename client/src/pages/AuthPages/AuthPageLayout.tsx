@@ -1,8 +1,13 @@
 import React from "react";
 import GridShape from "../../components/common/GridShape";
 import ThemeTogglerTwo from "../../components/common/ThemeTogglerTwo";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+    const { theme } = useTheme();
+
+    const logo = theme === "dark" ? "/corpman_darkmode.png" : "/corpman_lightmode.png";
+
     return (
         <div className="relative p-6 bg-white z-1 dark:bg-gray-900 sm:p-0">
             <div className="relative flex flex-col justify-center w-full h-screen lg:flex-row dark:bg-gray-900 sm:p-0">
@@ -10,27 +15,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 <div className="items-center hidden w-full h-full lg:w-1/2 bg-brand-950 dark:bg-white/5 lg:grid">
                     <div className="relative flex items-center justify-center z-1">
                         <GridShape />
-                        <div className="flex flex-col items-center max-w-xs">
+                        <div className="flex flex-col items-center max-w-screen-sm">
                             <span className="text-5xl font-black tracking-widest text-brand-500 dark:text-white select-none">
-                              <span className="inline-block align-middle mr-2">
-                                <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-                                  <rect x="2" y="2" width="32" height="32" rx="8" fill="#2563EB" />
-                                  <text
-                                    x="18"
-                                    y="25"
-                                    textAnchor="middle"
-                                    fontSize="18"
-                                    fontWeight="bold"
-                                    fill="white"
-                                    fontFamily="sans-serif"
-                                  >
-                                    C
-                                  </text>
-                                </svg>
-                              </span>
-                              corpman
+                                <img loading="lazy" src={logo} height={200} width={200} />
                             </span>
-                            <p className="text-center text-gray-400 dark:text-white/60"></p>
+                            <p className="text-center text-gray-400 text-title-sm dark:text-white/60 mt-3">Organize. Optimize. Corpman.</p>
                         </div>
                     </div>
                 </div>

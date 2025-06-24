@@ -4,7 +4,7 @@ import { Customer, StaticFunc } from "../../api/types";
 import { Pagination } from "../../components/ui/table";
 import { formatCurrency } from "../../utils";
 import { formatDate } from "../../utils/date";
-import { Drawer } from "../../components/Drawer.tsx/Drawer";
+import { Drawer } from "../../components/Drawer/Drawer";
 import Input from "../../components/form/input/InputField";
 
 const WalletHistory = ({ customer, onClose }: { customer: Customer; onClose: StaticFunc }) => {
@@ -19,6 +19,8 @@ const WalletHistory = ({ customer, onClose }: { customer: Customer; onClose: Sta
     const pageSize = data?.data?.limit ?? 15;
 
     const totalData = data?.data?.total ?? 0;
+
+    console.log("here")
 
     return (
         <Drawer
@@ -78,7 +80,7 @@ const WalletHistory = ({ customer, onClose }: { customer: Customer; onClose: Sta
             width="w-full lg:w-1/3"
         >
             {isLoading ? (
-                <div className="block lg:hidden px-2 py-4">
+                <div className="block px-2 py-4">
                     {[...Array(5)].map((_, idx) => (
                         <div key={idx} className="mb-4 rounded-xl border border-gray-200 dark:border-white/[0.07] p-4 shadow animate-pulse">
                             <div className="flex items-center justify-between mb-3">

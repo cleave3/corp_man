@@ -76,7 +76,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-auto p-4">{children}</div>
+                <div className="flex-1 overflow-auto px-4">{children}</div>
             </div>
         </>
     );

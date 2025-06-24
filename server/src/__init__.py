@@ -1,6 +1,7 @@
 import os
 from fastapi import Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
+from src.common.notification import NotificationService
 from src.middleware.dependencies import PermissionChecker
 from src.common.utilities import response
 from src.common.permissions import user_permission_actions
@@ -28,6 +29,10 @@ register_middleware(app)
 
 @app.get("/", status_code=200, include_in_schema=False)
 def app_entry():
+    NotificationService.send_sms(
+        telephone="08165124558",
+        message=f"Hello Cleave, your account has been created successfully.",
+    )
     return response(message="Corpman API is live 🚀")
 
 
