@@ -95,6 +95,8 @@ export interface CreateCustomerRequest {
     phone: string;
     image_url?: string;
     address: string;
+    customer_type: string;
+    customer_code: string;
     payment_frequency: string;
     next_payment_date: string;
     opening_balance: number;
@@ -118,6 +120,7 @@ export interface PaginatedQuery {
     start_date?: string;
     end_date?: string;
     search?: string;
+    [x: string]: PropertyKey;
 }
 
 export type SignInResponseData = {
@@ -206,6 +209,8 @@ export type Customer = {
     email: string;
     image_url: string;
     payment_frequency: string;
+    customer_type: string;
+    customer_code: string;
     created_at: string;
     creator_id: string;
     creator: {
@@ -262,11 +267,17 @@ export type OverviewStats = {
     total_income: number;
 };
 
-export type TransactionInitiatorStats = {
-    initiator_id: string;
-    count: number;
-    name: string;
-}[];
+export type PerformanceMetrics = {
+    total_customer_deposits: number;
+    total_payouts: number;
+    total_income: number;
+    collectors_stats: {
+        initiator_id: string;
+        count: number;
+        name: string;
+        collection_volume: number;
+    }[];
+};
 
 export type TransactionYearStats = {
     month: string;
@@ -286,3 +297,8 @@ export type WalletHistory = PaginatedResponsePayload<
 >;
 
 export type UserPermissions = Record<string, { name: string; action: string }[]>;
+
+export interface AppCustomRouteProps {
+    children: JSX.Element;
+    componentPermissions?: string[];
+}

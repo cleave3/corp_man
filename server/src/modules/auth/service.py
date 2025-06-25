@@ -7,6 +7,7 @@ from src.common.notification import NotificationService
 from src.common.enums import UserTypeEnum
 from src.common.errors import (
     AccountNotVerified,
+    BadRequest,
     InvalidCredentials,
     InvalidPassword,
     InvalidToken,
@@ -361,6 +362,11 @@ class AuthService(RedisService):
 
         if not user.has_password:
             raise InvalidPassword()
+
+        if verify_password(new_password, user.password_hash):
+            raise BadRequest(
+                "Your new password can not be the same as your current password"
+            )
 
         if not verify_password(current_password, user.password_hash):
             raise InvalidPassword()

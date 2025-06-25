@@ -59,8 +59,11 @@ export const useUpdateUserPermissions = () => {
 // Analytics Hooks
 export const useOverviewStats = () => useQuery({ queryKey: ["overviewStats"], queryFn: ApiService.getOverviewStats });
 
-export const useTransactionsByInitiator = () => {
-    return useQuery({ queryKey: ["transactionsByInitiator"], queryFn: ApiService.getTransactionsByInitiator });
+export const useTransactionsByInitiator = (year: number, month: number) => {
+    return useQuery({
+        queryKey: ["transactionsByInitiator", year, month],
+        queryFn: ({ queryKey }) => ApiService.getTransactionsByInitiator({ year: queryKey[1] as string, month: queryKey[2] as string })
+    });
 };
 
 export const useTransactionYearStats = (year: string) =>
@@ -91,18 +94,8 @@ export const useSubmitBusiness = () => {
 export const useGetBusiness = () => useQuery({ queryKey: ["business"], queryFn: ApiService.getBusiness });
 
 export const useUpdateBusinessPreferences = () => {
-    const queryClient = useQueryClient();
-
     return useMutation({
-        mutationFn: ApiService.updateBusinessPreferences,
-        onSuccess: (data, variables, context) => {
-            console.log({ data, variables, context });
-            queryClient.invalidateQueries({ queryKey: ["business"] });
-            toast.success("Business preference Updated successfully");
-        },
-        onError: (error) => {
-            toast.error(error.message);
-        }
+        mutationFn: ApiService.updateBusinessPreferences
     });
 };
 
@@ -111,7 +104,7 @@ export const useCreateCustomer = () => useMutation({ mutationFn: ApiService.crea
 
 export const useCustomers = (params: PaginatedQuery) => {
     return useQuery({
-        queryKey: ["customers", params.page, params.search],
+        queryKey: ["customers", params.page, params.search, params.start_date, params.end_date, params.customer_type],
         queryFn: () => ApiService.listCustomers(params)
     });
 };

@@ -62,16 +62,7 @@ async def register_team_member(
 @auth_router.get(
     "/user-permissions",
     status_code=status.HTTP_200_OK,
-    dependencies=[
-        Depends(
-            PermissionChecker(
-                allowed_permissions=[
-                    user_permission_actions["create_user"],
-                    user_permission_actions["update_user"],
-                ]
-            )
-        )
-    ],
+    dependencies=[Depends(AcessTokenBearer())],
 )
 async def get_user_permissions():
 

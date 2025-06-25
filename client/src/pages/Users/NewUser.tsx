@@ -13,6 +13,8 @@ import ConfirmationModal from "../../components/confirm";
 import { toast } from "react-toastify";
 import { useAuthStore } from "../../hooks/useAuthStore";
 import Badge from "../../components/ui/badge/Badge";
+import AccessWrapper from "../../components/AccessController";
+import { PERMISSION_VALUES } from "../../utils";
 
 interface NewUserProps {
     user: AuthUser;
@@ -41,6 +43,7 @@ const NewUser = ({ user, isOpen, openModal, closeModal }: NewUserProps) => {
 
     useEffect(() => {
         getUserPermissions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -187,7 +190,9 @@ const NewUser = ({ user, isOpen, openModal, closeModal }: NewUserProps) => {
     return (
         <>
             <div className="relative flex justify-between items-center flex-wrap mb-5">
-                <Button onClick={openModal} variant="primary" leftIcon={<PlusIcon className="size-6" />} children="New User" />
+                <AccessWrapper componentPermissions={[PERMISSION_VALUES.users.create_user]}>
+                    <Button onClick={openModal} variant="primary" leftIcon={<PlusIcon className="size-6" />} children="New User" />
+                </AccessWrapper>
             </div>
             <Drawer
                 title={
@@ -197,16 +202,18 @@ const NewUser = ({ user, isOpen, openModal, closeModal }: NewUserProps) => {
                         {user && (
                             <div className="flex justify-end mb-3">
                                 {user?.uid !== auth.uid && (
-                                    <Button
-                                        className="rounded-none"
-                                        variant={user?.status === "active" ? "danger" : "success"}
-                                        disabled={isPending}
-                                        onClick={() => setOpenConfrim({ action: "status", open: true })}
-                                    >
-                                        {openConfirm.action === "status" && isPending && "Updating..."}
-                                        {!isPending && user?.status === "active" && "Block staff"}
-                                        {!isPending && user?.status === "blocked" && "Activate staff"}
-                                    </Button>
+                                    <AccessWrapper componentPermissions={[PERMISSION_VALUES.users.update_user]}>
+                                        <Button
+                                            className="rounded-none"
+                                            variant={user?.status === "active" ? "danger" : "success"}
+                                            disabled={isPending}
+                                            onClick={() => setOpenConfrim({ action: "status", open: true })}
+                                        >
+                                            {openConfirm.action === "status" && isPending && "Updating..."}
+                                            {!isPending && user?.status === "active" && "Block staff"}
+                                            {!isPending && user?.status === "blocked" && "Activate staff"}
+                                        </Button>
+                                    </AccessWrapper>
                                 )}
                             </div>
                         )}
@@ -337,13 +344,15 @@ const NewUser = ({ user, isOpen, openModal, closeModal }: NewUserProps) => {
                         </div>
                     </div>
                     {user?.uid !== auth.uid && (
-                        <div className="sticky bottom-2 left-0 flex items-center gap-3 px-2 mt-10 justify-end z-10">
-                            <Button className="lg:w-full w-full" variant="primary" disabled={isPending}>
-                                {user && !isPending && "Save Changes"}
-                                {!user && !isPending && "Create User"}
-                                {isPending && ["edit", "create"].includes(openConfirm.action) && "Saving..."}
-                            </Button>
-                        </div>
+                        <AccessWrapper componentPermissions={[PERMISSION_VALUES.users.update_user]}>
+                            <div className="sticky bottom-2 left-0 flex items-center gap-3 px-2 mt-10 justify-end z-10">
+                                <Button className="lg:w-full w-full" variant="primary" disabled={isPending}>
+                                    {user && !isPending && "Save Changes"}
+                                    {!user && !isPending && "Create User"}
+                                    {isPending && ["edit", "create"].includes(openConfirm.action) && "Saving..."}
+                                </Button>
+                            </div>
+                        </AccessWrapper>
                     )}
                 </form>
             </Drawer>

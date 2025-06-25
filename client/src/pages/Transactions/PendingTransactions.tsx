@@ -7,7 +7,7 @@ import { Modal } from "../../components/ui/modal";
 import { TableLoader, Table, TableHeader, TableRow, TableCell, TableBody } from "../../components/ui/table";
 import { useApproveTransaction, useDeclineTransaction, usePendingTransactions } from "../../hooks/useApiHooks";
 import { useModal } from "../../hooks/useModal";
-import { formatCurrency } from "../../utils";
+import { formatCurrency, PERMISSION_VALUES } from "../../utils";
 import { formatDate } from "../../utils/date";
 import TransactionDetail from "./TransactionDetail";
 import Button from "../../components/button/Button";
@@ -15,6 +15,7 @@ import ConfirmationModal from "../../components/confirm";
 import { Dropdown } from "../../components/ui/dropdown/Dropdown";
 import { DropdownItem } from "../../components/ui/dropdown/DropdownItem";
 import { MoreDotIcon } from "../../icons";
+import AccessWrapper from "../../components/AccessController";
 
 const PendingTransactions = () => {
     const [openDropDown, setOpenDropDown] = useState(false);
@@ -129,25 +130,32 @@ const PendingTransactions = () => {
                                                         >
                                                             View Details
                                                         </DropdownItem>
-                                                        <DropdownItem
-                                                            onItemClick={() => {
-                                                                setActionParams({ action: "approve", id: transaction?.id });
-                                                                closeDropdown();
-                                                            }}
-                                                            className="flex w-full font-normal text-left text-gray-500 rounded-lg hover:bg-success-400 hover:text-white dark:text-gray-400  dark:hover:text-gray-300"
-                                                        >
-                                                            Approve
-                                                        </DropdownItem>
 
-                                                        <DropdownItem
-                                                            onItemClick={() => {
-                                                                setActionParams({ action: "decline", id: transaction?.id });
-                                                                closeDropdown();
-                                                            }}
-                                                            className="flex w-full font-normal text-left text-gray-500 rounded-lg  hover:text-white hover:bg-red-500 dark:hover:text-white"
+                                                        <AccessWrapper
+                                                            componentPermissions={[PERMISSION_VALUES.transaction.approve_transaction]}
                                                         >
-                                                            Decline
-                                                        </DropdownItem>
+                                                            <>
+                                                                <DropdownItem
+                                                                    onItemClick={() => {
+                                                                        setActionParams({ action: "approve", id: transaction?.id });
+                                                                        closeDropdown();
+                                                                    }}
+                                                                    className="flex w-full font-normal text-left text-gray-500 rounded-lg hover:bg-success-400 hover:text-white dark:text-gray-400  dark:hover:text-gray-300"
+                                                                >
+                                                                    Approve
+                                                                </DropdownItem>
+
+                                                                <DropdownItem
+                                                                    onItemClick={() => {
+                                                                        setActionParams({ action: "decline", id: transaction?.id });
+                                                                        closeDropdown();
+                                                                    }}
+                                                                    className="flex w-full font-normal text-left text-gray-500 rounded-lg  hover:text-white hover:bg-red-500 dark:hover:text-white"
+                                                                >
+                                                                    Decline
+                                                                </DropdownItem>
+                                                            </>
+                                                        </AccessWrapper>
                                                     </Dropdown>
                                                 </div>
                                             </TableCell>
@@ -186,7 +194,6 @@ const PendingTransactions = () => {
                                                 : "error"
                                         }
                                     />
-
                                     <div className="flex gap-2">
                                         <Button
                                             variant="secondary"
@@ -200,28 +207,32 @@ const PendingTransactions = () => {
                                         >
                                             <ListBulletIcon className="h-4 w-4" />
                                         </Button>
-                                        <Button
-                                            variant="success"
-                                            // size="icon"
-                                            className="p-1 h-7 w-7"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                setActionParams({ action: "approve", id: transaction?.id });
-                                            }}
-                                        >
-                                            <CheckIcon className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            variant="danger"
-                                            // size="icon"
-                                            className="p-1 h-7 w-7"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                setActionParams({ action: "decline", id: transaction?.id });
-                                            }}
-                                        >
-                                            <XMarkIcon className="h-4 w-4" />
-                                        </Button>
+                                        <AccessWrapper componentPermissions={[PERMISSION_VALUES.transaction.approve_transaction]}>
+                                            <>
+                                                <Button
+                                                    variant="success"
+                                                    // size="icon"
+                                                    className="p-1 h-7 w-7"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        setActionParams({ action: "approve", id: transaction?.id });
+                                                    }}
+                                                >
+                                                    <CheckIcon className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="danger"
+                                                    // size="icon"
+                                                    className="p-1 h-7 w-7"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        setActionParams({ action: "decline", id: transaction?.id });
+                                                    }}
+                                                >
+                                                    <XMarkIcon className="h-4 w-4" />
+                                                </Button>
+                                            </>
+                                        </AccessWrapper>
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap gap-y-2 mb-2">

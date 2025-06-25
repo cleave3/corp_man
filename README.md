@@ -6,17 +6,18 @@
 - create customer [DONE]
 - Wallet History [DONE]
 - Edit customer  [DONE]
-- Add user
-- Edit user
+- Add user [DONE]
+- Edit user [DONE]
 - search customer [DONE]
-- Notification
-- Push notification
-- Access control
-- pwa
-- add daily to paymentfrequency
-- customerType = REGULAR | YEARLY COLLECTORS
-  - REGULAR [collect anytime]
-  - YEARLY COLLECTORS [365 days collection] [5% interest]
-- CUSTOMER CODE
-- Monthly Volume per staff [by year and month]
-- filter customer by date
+- Notification  [DONE]
+- Push notification   [DONE]
+- Access control  [DONE]
+- pwa   [INPROGRESS]
+- sms   [INPROGRESS]
+- add daily to paymentfrequency  [DONE]
+- customerType = REGULAR | YEARLY COLLECTORS   [DONE]
+  - REGULAR [collect anytime]  [DONE]
+  - YEARLY COLLECTORS [365 days collection] [5% interest] [DONE]
+- CUSTOMER CODE  [DONE]
+- Monthly Volume per staff [by year and month] [DONE]
+- filter customer by date   [DONE]

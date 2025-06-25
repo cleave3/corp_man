@@ -8,6 +8,7 @@ type AuthState = {
     user: AuthUser | null;
     login: (args: { access_token?: string; refresh_token?: string; user?: AuthUser }) => void;
     logout: () => void;
+    refreshAuth: () => void;
 };
 
 export const useAuthStore = create<AuthState>((set) => {
@@ -21,6 +22,10 @@ export const useAuthStore = create<AuthState>((set) => {
             if (refresh_token) Cookies.set("refresh_token", refresh_token, { expires: 1 });
             if (user) Cookies.set("auth_user", JSON.stringify(user), { expires: 1 });
             set({ user: user ?? null });
+        },
+        refreshAuth: async () => {
+            const user = await ApiService.getMe();
+            set({ user: user.data ?? null });
         },
         logout: async () => {
             try {

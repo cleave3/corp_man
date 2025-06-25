@@ -17,6 +17,8 @@ class CustomerCreate(BaseModel):
     address: Optional[str] = Field(
         default=None, examples=["23 Freedom Street, Lagos, Nigeria"]
     )
+    customer_code: str = Field(..., max_length=100, examples=["BSDCJKDE"])
+    customer_type: str = Field(..., max_length=50, examples=["Premium", "Regular"])
     payment_frequency: str = Field(
         default=PaymentFrequencyEnum.monthly.value,
         examples=[PaymentFrequencyEnum.monthly.value],
@@ -36,6 +38,10 @@ class CustomerUpdate(BaseModel):
     )
     image_url: Optional[str] = Field(
         default=None, examples=["https://examples.com/images/jane_updated.jpg"]
+    )
+    customer_code: Optional[str] = Field(..., max_length=100, examples=["BSDCJKDE"])
+    customer_type: Optional[str] = Field(
+        ..., max_length=100, examples=["Premium", "Regular"]
     )
     address: Optional[str] = Field(default=None, examples=["42 Update Avenue, Abuja"])
     payment_frequency: Optional[str] = Field(

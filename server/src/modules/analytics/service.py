@@ -5,7 +5,7 @@ from fastapi import Depends
 from src.modules.auth.service import AuthService
 from src.common.enums import TransactionTypeEnum
 from src.config.db import get_session
-from src.models import Customer, User, Wallet, Transaction, Auth
+from src.models import Customer, Wallet, Transaction, Auth
 from datetime import date
 
 
@@ -38,13 +38,17 @@ class AnalyticsService(AuthService):
         debit_sum = debit_sum_result.one()
         return credit_sum - debit_sum
 
-    async def total_transaction_amount_by_type(self, type: str):
-        result = await self.session.exec(
-            select(func.coalesce(func.sum(Transaction.amount), 0)).where(
-                (Transaction.transaction_type == type)
-                & (Transaction.status == "completed")
-            )
+    async def total_transaction_amount_by_type(
+        self, type: str, month: int = None, year: int = None
+    ):
+        query = select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+            (Transaction.transaction_type == type) & (Transaction.status == "completed")
         )
+        if year is not None:
+            query = query.where(func.extract("year", Transaction.created_at) == year)
+        if month is not None:
+            query = query.where(func.extract("month", Transaction.created_at) == month)
+        result = await self.session.exec(query)
         return result.one()
 
     async def total_due_collections(self):
@@ -104,30 +108,59 @@ class AnalyticsService(AuthService):
 
         return top_savers
 
-    async def get_transactions_count_by_initiator(self):
-        result = await self.session.exec(
-            select(
-                Transaction.initiator_id,
-                func.count().label("count"),
-            )
-            .where(
-                (Transaction.status == "completed")
-                & (Transaction.transaction_type == "customer_deposit")
-            )
-            .group_by(
-                Transaction.initiator_id,
-            )
-            .order_by(func.count().desc())
+    async def get_transactions_count_by_initiator(self, month: int, year: int):
+        (
+            result,
+            total_customer_deposits,
+            total_payouts,
+            total_income,
+        ) = await asyncio.gather(
+            self.session.exec(
+                select(
+                    Transaction.initiator_id,
+                    func.count().label("count"),
+                    func.coalesce(func.sum(Transaction.amount), 0).label(
+                        "collection_volume"
+                    ),
+                )
+                .where(
+                    (Transaction.status == "completed")
+                    & (Transaction.transaction_type == "customer_deposit")
+                    & (func.extract("year", Transaction.created_at) == year)
+                    & (func.extract("month", Transaction.created_at) == month)
+                )
+                .group_by(
+                    Transaction.initiator_id,
+                )
+                .order_by(func.coalesce(func.sum(Transaction.amount), 0).desc())
+            ),
+            self.total_transaction_amount_by_type(
+                type=TransactionTypeEnum.customer_deposit.value, month=month, year=year
+            ),
+            self.total_transaction_amount_by_type(
+                type=TransactionTypeEnum.payout.value, month=month, year=year
+            ),
+            self.total_transaction_amount_by_type(
+                type=TransactionTypeEnum.income.value, month=month, year=year
+            ),
         )
+
         rows = result.all()
-        return [
-            {
-                "initiator_id": initiator_id,
-                "count": count,
-                "name": await self.get_user_name_by_id(initiator_id),
-            }
-            for initiator_id, count in rows
-        ]
+
+        return {
+            "total_customer_deposits": total_customer_deposits,
+            "total_payouts": total_payouts,
+            "total_income": total_income,
+            "collectors_stats": [
+                {
+                    "collection_volume": collection_volume,
+                    "initiator_id": initiator_id,
+                    "count": count,
+                    "name": await self.get_user_name_by_id(initiator_id),
+                }
+                for initiator_id, count, collection_volume in rows
+            ],
+        }
 
     async def get_transactions_amount_by_filter(self, year: int):
         data = []

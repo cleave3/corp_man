@@ -24,9 +24,9 @@ import {
     Business,
     OverviewStats,
     TransactionYearStats,
-    TransactionInitiatorStats,
     WalletHistory,
-    UserPermissions
+    UserPermissions,
+    PerformanceMetrics
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
@@ -39,6 +39,7 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
@@ -46,9 +47,7 @@ api.interceptors.response.use(
         if (error.response?.status === 401 && !originalRequest._retry && Cookies.get("refresh_token")) {
             originalRequest._retry = true;
             try {
-                const { data } = await axios.get(`${BASE_URL}/api/v1/auth/refresh-token`, {
-                    withCredentials: true
-                });
+                const { data } = await axios.get(`${BASE_URL}/api/v1/auth/refresh-token`);
                 Cookies.set("access_token", data.access_token, { expires: 1 });
                 Cookies.set("refresh_token", data.refresh_token, { expires: 1 });
                 originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
@@ -57,7 +56,8 @@ api.interceptors.response.use(
                 console.error(err);
                 Cookies.remove("access_token");
                 Cookies.remove("refresh_token");
-                window.location.href = "/login";
+                Cookies.remove("auth_user");
+                window.location.href = "/signin";
             }
         }
         return Promise.reject(error);
@@ -120,8 +120,12 @@ export default class ApiService {
     }
 
     static async changePassword(data: ChangePasswordRequest): Promise<APIResponse<unknown>> {
-        const res = await api.patch("/api/v1/auth/change-password", data);
-        return res.data;
+        try {
+            const res = await api.patch("/api/v1/auth/change-password", data);
+            return res.data;
+        } catch (error) {
+            throw error?.response?.data;
+        }
     }
 
     static async forgotPassword(data: ForgotPasswordRequest): Promise<APIResponse<unknown>> {
@@ -163,8 +167,8 @@ export default class ApiService {
         return res.data;
     }
 
-    static async getTransactionsByInitiator(): Promise<APIResponse<TransactionInitiatorStats>> {
-        const res = await api.get("/api/v1/analytics/transactions-initiator-stats");
+    static async getTransactionsByInitiator(params: { year: string; month: string }): Promise<APIResponse<PerformanceMetrics>> {
+        const res = await api.get("/api/v1/analytics/transactions-initiator-stats", { params });
         return res.data;
     }
 

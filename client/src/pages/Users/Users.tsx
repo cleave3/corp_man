@@ -21,6 +21,7 @@ const Users = () => {
     return (
         <>
             <PageBreadcrumb pageTitle={`Team`} />
+
             <NewUser
                 user={selectedUser}
                 isOpen={isOpen}

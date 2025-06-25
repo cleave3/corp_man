@@ -3,7 +3,7 @@ import { PlusIcon } from "@heroicons/react/24/solid";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { TableLoader, Table, TableHeader, TableRow, TableCell, TableBody, Pagination } from "../../components/ui/table";
 import { useTransactions } from "../../hooks/useApiHooks";
-import { formatCurrency, ROUTES } from "../../utils";
+import { formatCurrency, PERMISSION_VALUES, ROUTES } from "../../utils";
 import { formatDate } from "../../utils/date";
 import Badge from "../../components/ui/badge/Badge";
 import { useModal } from "../../hooks/useModal";
@@ -16,6 +16,7 @@ import { useNavigate, useSearchParams } from "react-router";
 import Button from "../../components/button/Button";
 import { Dropdown } from "../../components/ui/dropdown/Dropdown";
 import SearchableSelect from "../../components/form/SearchableSelect";
+import AccessWrapper from "../../components/AccessController";
 
 const Transactions = () => {
     const [showFilters, setShowFilters] = useState(false);
@@ -49,34 +50,29 @@ const Transactions = () => {
         <>
             <PageBreadcrumb pageTitle={`Transactions`} />
             <div className="relative flex justify-between flex-wrap mb-5">
-                <Button
-                    onClick={() => navigate(ROUTES.NEW_TRANSACTIONS)}
-                    variant="primary"
-                    leftIcon={<PlusIcon className="size-6" />}
-                    children="New Transaction"
-                />
+                <AccessWrapper componentPermissions={[PERMISSION_VALUES.transaction.initiate_transaction]}>
+                    <Button
+                        onClick={() => navigate(ROUTES.NEW_TRANSACTIONS)}
+                        variant="primary"
+                        leftIcon={<PlusIcon className="size-6" />}
+                        children="New Transaction"
+                    />
+                </AccessWrapper>
                 <button
                     type="button"
                     className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                     onClick={() => setShowFilters((prev) => !prev)}
                     aria-label="Show Filters"
                 >
-                        {/* Filter Icon (SVG) */}
-                        <svg
-                            width="20"
-                            height="20"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            className="text-gray-700 dark:text-white"
-                        >
-                            <path
-                                d="M3 5h18M6 12h12M10 19h4"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
-                        </svg>
+                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" className="text-gray-700 dark:text-white">
+                        <path
+                            d="M3 5h18M6 12h12M10 19h4"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                    </svg>
                 </button>
 
                 <Dropdown isOpen={showFilters} onClose={() => setShowFilters((prev) => !prev)} className="p-2">

@@ -263,6 +263,8 @@ class Customer(SQLModel, table=True):
         back_populates="customer",
         sa_relationship_kwargs={"lazy": "selectin"},
     )
+    customer_type: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
+    customer_code: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
     updated_at: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, default=datetime.now, onupdate=datetime.now)

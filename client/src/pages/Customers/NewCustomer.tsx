@@ -3,13 +3,13 @@ import { useCreateCustomer, useUpdateCustomer } from "../../hooks/useApiHooks";
 import { toast } from "react-toastify";
 import CurrencyInput from "../../components/form/input/CurrencyInput";
 import Label from "../../components/form/Label";
-import Button from "../../components/ui/button/Button";
 import SearchableSelect from "../../components/form/SearchableSelect";
 import { currentDate } from "../../utils/date";
 import Input from "../../components/form/input/InputField";
 import { useQueryClient } from "@tanstack/react-query";
 import { Customer, StaticFunc, UpdateCustomerRequest } from "../../api/types";
 import { useEffect } from "react";
+import Button from "../../components/button/Button";
 
 const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; customerToEdit: Customer }) => {
     const [customer, setCustomer] = useState({
@@ -18,6 +18,8 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
         email: "",
         phone: "",
         address: "",
+        customer_type: "regular",
+        customer_code: "",
         payment_frequency: "weekly",
         next_payment_date: currentDate(),
         opening_balance: 0
@@ -37,7 +39,9 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
                 address: customerToEdit.address || "",
                 payment_frequency: customerToEdit.payment_frequency || "weekly",
                 next_payment_date: customerToEdit.next_payment_date?.substring(0, 10) || currentDate(),
-                opening_balance: 0
+                opening_balance: 0,
+                customer_code: customerToEdit?.customer_code || "",
+                customer_type: customerToEdit?.customer_type || "regular"
             });
         }
     }, [customerToEdit]);
@@ -46,11 +50,27 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
         const { name, value } = e.target;
         setCustomer((prev) => ({
             ...prev,
-            [name]: value
+            [name]: name === "customer_code" ? value?.toUpperCase() : value
         }));
     };
 
     const queryClient = useQueryClient();
+
+    const resetForm = () => {
+        setCustomer({
+            first_name: "",
+            last_name: "",
+            email: "",
+            phone: "",
+            address: "",
+            payment_frequency: "",
+            next_payment_date: "",
+            opening_balance: 0,
+            customer_code: "",
+            customer_type: "regular"
+        });
+        closeModal();
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -62,7 +82,10 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
                 email: customer.email,
                 phone: customer.phone,
                 address: customer.address,
-                payment_frequency: customer.payment_frequency
+                payment_frequency: customer.payment_frequency,
+                customer_code: customer.customer_code,
+                customer_type: customer.customer_type,
+                next_payment_date: customer.next_payment_date
             };
             um(
                 { customerId: customerToEdit.id, data: editCustomerData },
@@ -70,18 +93,7 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
                     onSuccess: async (data) => {
                         queryClient.invalidateQueries({ queryKey: ["customers"] });
                         toast.success(data.message);
-
-                        setCustomer({
-                            first_name: "",
-                            last_name: "",
-                            email: "",
-                            phone: "",
-                            address: "",
-                            payment_frequency: "",
-                            next_payment_date: "",
-                            opening_balance: 0
-                        });
-                        closeModal();
+                        resetForm();
                     },
                     onError: (error) => {
                         toast.error(error.message);
@@ -93,18 +105,7 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
                 onSuccess: async (data) => {
                     queryClient.invalidateQueries({ queryKey: ["customers"] });
                     toast.success(data.message);
-
-                    setCustomer({
-                        first_name: "",
-                        last_name: "",
-                        email: "",
-                        phone: "",
-                        address: "",
-                        payment_frequency: "",
-                        next_payment_date: "",
-                        opening_balance: 0
-                    });
-                    closeModal();
+                    resetForm();
                 },
                 onError: (error) => {
                     toast.error(error.message);
@@ -144,6 +145,31 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
                                     placeholder="Enter last name"
                                 />
                             </div>
+
+                            <div className="col-span-2 lg:col-span-1">
+                                <Label>Customer Code</Label>
+                                <Input
+                                    type="text"
+                                    name="customer_code"
+                                    value={customer.customer_code}
+                                    onChange={handleChange}
+                                    maxLength={20}
+                                    required
+                                    placeholder="Enter customer code"
+                                />
+                            </div>
+                            <div className="col-span-2 lg:col-span-1">
+                                <Label>Customer type</Label>
+                                <SearchableSelect
+                                    placeholder="Select customer type"
+                                    value={customer.customer_type}
+                                    onChange={(value) => setCustomer((prev) => ({ ...prev, customer_type: value }))}
+                                    options={[
+                                        { label: "Regular", value: "regular" },
+                                        { label: "Premium", value: "premium" }
+                                    ]}
+                                />
+                            </div>
                             <div className="col-span-2">
                                 <Label>Email</Label>
                                 <Input
@@ -151,7 +177,7 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
                                     name="email"
                                     value={customer.email}
                                     onChange={handleChange}
-                                    required
+                                    // required
                                     placeholder="Enter email address"
                                 />
                             </div>
@@ -173,9 +199,11 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
                                     value={customer.payment_frequency}
                                     onChange={(value) => setCustomer((prev) => ({ ...prev, payment_frequency: value }))}
                                     options={[
+                                        { label: "Daily", value: "daily" },
                                         { label: "Weekly", value: "weekly" },
                                         { label: "Biweekly", value: "biweekly" },
-                                        { label: "Monthly", value: "monthly" }
+                                        { label: "Monthly", value: "monthly" },
+                                        { label: "Yearly", value: "yearly" }
                                     ]}
                                 />
                             </div>
@@ -217,7 +245,7 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
                     </div>
                 </div>
                 <div className="flex items-center gap-3 px-2 mt-10 justify-end">
-                    <Button size="sm" disabled={isPending}>
+                    <Button className="lg:w-full w-full" variant="primary" disabled={isPending}>
                         {isPending ? "Saving Customer" : "Save Customer"}
                     </Button>
                 </div>

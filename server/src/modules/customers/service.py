@@ -109,6 +109,9 @@ class CustomerService:
         page: int = 1,
         limit: int = 10,
         search: str = None,
+        customer_type: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
     ) -> dict:
         stmt = select(Customer).order_by(Customer.created_at.desc())
         count_stmt = select(func.count()).select_from(Customer)
@@ -122,9 +125,21 @@ class CustomerService:
                 (Customer.first_name.ilike(f"%{search}%"))
                 | (Customer.last_name.ilike(f"%{search}%"))
                 | (Customer.email.ilike(f"%{search}%"))
+                | (Customer.customer_code.ilike(f"%{search}%"))
+                | (Customer.customer_type.ilike(f"%{search}%"))
+                | (Customer.phone.ilike(f"%{search}%"))
             )
             stmt = stmt.where(search_filter)
             count_stmt = count_stmt.where(search_filter)
+        if customer_type:
+            stmt = stmt.where(Customer.customer_type == customer_type)
+            count_stmt = count_stmt.where(Customer.customer_type == customer_type)
+        if start_date:
+            stmt = stmt.where(Customer.created_at >= start_date)
+            count_stmt = count_stmt.where(Customer.created_at >= start_date)
+        if end_date:
+            stmt = stmt.where(Customer.created_at <= end_date)
+            count_stmt = count_stmt.where(Customer.created_at <= end_date)
 
         total_result = await self.session.exec(count_stmt)
         total_count = total_result.one()
