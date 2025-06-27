@@ -39,7 +39,6 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
@@ -213,7 +212,7 @@ export default class ApiService {
         return res.data;
     }
 
-    static async getAllCustomers(): Promise<APIResponse<{ id: string; name: string; phone: string; balance: number }[]>> {
+    static async getAllCustomers(): Promise<APIResponse<Customer[]>> {
         const res = await api.get("/api/v1/customer/all");
         return res.data;
     }

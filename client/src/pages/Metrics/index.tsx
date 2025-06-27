@@ -3,12 +3,16 @@ import { useTransactionsByInitiator } from "../../hooks/useApiHooks";
 import InitiatorStats from "./InitiatorStats";
 import MetricsLoader from "./MetricsLoader";
 import { useState } from "react";
+import { formatCurrency } from "../../utils";
+import useWidth from "../../hooks/useWidth";
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 const Metrics = () => {
     const [year, setYear] = useState(new Date().getFullYear());
     const [month, setMonth] = useState(new Date().getMonth() + 1);
+
+    const { isMobile } = useWidth()
 
     const { data, isLoading } = useTransactionsByInitiator(year, month);
 
@@ -58,9 +62,6 @@ const Metrics = () => {
                 </select>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2">
-                <div className="lg:p-6 my-6">
-                    <InitiatorStats initiators={initiators} />
-                </div>
                 <div className="flex flex-col my-6">
                     {total_customer_deposits || total_income || total_payouts ? (
                         <Chart
@@ -69,8 +70,20 @@ const Metrics = () => {
                             series={[total_customer_deposits || 0, total_income || 0, total_payouts || 0]}
                             options={{
                                 labels: ["Total Customer Deposits", "Total Income", "Total Payouts"],
-                                legend: { position: "bottom" },
-                                title: { text: "Financial Flow Breakdown", align: "center" }
+                                legend: {
+                                    position: isMobile ? "top" : "left",
+
+                                    formatter: (seriesName: string, opts) => {
+                                        const value = opts.w.globals.series[opts.seriesIndex];
+                                        return `${seriesName}: ${formatCurrency(value)}`;
+                                    }
+                                },
+                                title: { text: "Financial Flow Breakdown", align: "center" },
+                                tooltip: {
+                                    y: {
+                                        formatter: (val: number) => formatCurrency(val)
+                                    }
+                                }
                             }}
                         />
                     ) : (
@@ -96,13 +109,24 @@ const Metrics = () => {
                                         title: { text: "Collectors name" }
                                     },
                                     yaxis: {
-                                        title: { text: "Amount Collected" }
+                                        title: { text: "Amount Collected" },
+                                        labels: {
+                                            formatter: (val: number) => formatCurrency(val)
+                                        }
                                     },
                                     title: {
                                         text: "Collections Stats",
-                                        align: "center",
+                                        align: "center"
                                     },
-                                    legend: { show: false }
+                                    legend: {
+                                        show: true,
+                                        formatter: (seriesName: string) => `Collection Volume (${seriesName})`
+                                    },
+                                    tooltip: {
+                                        y: {
+                                            formatter: (val: number) => formatCurrency(val)
+                                        }
+                                    }
                                 }}
                             />
                         ) : (
@@ -111,6 +135,9 @@ const Metrics = () => {
                             </div>
                         )}
                     </div>
+                </div>
+                <div className="order-first lg:order-none lg:p-6 my-6">
+                    <InitiatorStats initiators={initiators} />
                 </div>
             </div>
         </>

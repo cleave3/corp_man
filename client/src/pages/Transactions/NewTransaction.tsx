@@ -9,6 +9,8 @@ import TextArea from "../../components/form/input/TextArea";
 import SearchableSelect from "../../components/form/SearchableSelect";
 import { toast } from "react-toastify";
 import Input from "../../components/form/input/InputField";
+import { useModal } from "../../hooks/useModal";
+import ConfirmationModal from "../../components/confirm";
 
 const NewTransaction = () => {
     const [transaction, setTransaction] = useState<CreateTransactionRequest>({
@@ -17,6 +19,8 @@ const NewTransaction = () => {
         description: "",
         meta_data: {}
     });
+
+    const { isOpen, openModal, closeModal } = useModal();
 
     const { mutate, isPending } = useCreateTransaction();
 
@@ -37,10 +41,16 @@ const NewTransaction = () => {
             return;
         }
 
+        openModal();
+    };
+
+    const handleConfirmAction = () => {
         if (transaction.transaction_type !== "income") {
             const customer = data?.data?.find?.((c) => c.id === transaction?.meta_data?.customer_id);
-            transaction.meta_data.customer = customer?.name;
+            transaction.meta_data.customer = `${customer.first_name} ${customer.last_name}`;
         }
+
+        closeModal()
 
         mutate(transaction, {
             onSuccess: async (data) => {
@@ -57,7 +67,7 @@ const NewTransaction = () => {
             }
         });
     };
-    // next_payment_date
+
     return (
         <>
             <PageBreadcrumb pageTitle={`Add Transaction`} />
@@ -114,7 +124,7 @@ const NewTransaction = () => {
                                                 value={transaction?.meta_data?.customer_id}
                                                 options={(data?.data || [])?.map((c) => ({
                                                     value: c.id,
-                                                    label: `${c.name} (${c.phone})` // [${formatCurrency(c.balance)}]`
+                                                    label: `${c.first_name} ${c.last_name} [${c.customer_code}] - (${c.phone})` // [${formatCurrency(c.balance)}]`
                                                 }))}
                                                 onChange={(value) =>
                                                     setTransaction((prev) => ({
@@ -166,6 +176,12 @@ const NewTransaction = () => {
                     </div>
                 </form>
             </div>
+            <ConfirmationModal
+                title={`Are you sure you want to submit this transaction?`}
+                isOpen={isOpen}
+                onCancel={closeModal}
+                onConfirm={handleConfirmAction}
+            />
         </>
     );
 };

@@ -100,6 +100,7 @@ export interface CreateCustomerRequest {
     payment_frequency: string;
     next_payment_date: string;
     opening_balance: number;
+    sms_alert: string
 }
 
 export type UpdateCustomerRequest = Partial<Omit<CreateCustomerRequest, "opening_balance">>;
@@ -213,6 +214,7 @@ export type Customer = {
     customer_code: string;
     created_at: string;
     creator_id: string;
+    sms_alert: "YES" | "NO";
     creator: {
         name: string;
     };

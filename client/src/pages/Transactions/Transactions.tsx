@@ -17,6 +17,7 @@ import Button from "../../components/button/Button";
 import { Dropdown } from "../../components/ui/dropdown/Dropdown";
 import SearchableSelect from "../../components/form/SearchableSelect";
 import AccessWrapper from "../../components/AccessController";
+import useWidth from "../../hooks/useWidth";
 
 const Transactions = () => {
     const [showFilters, setShowFilters] = useState(false);
@@ -25,6 +26,8 @@ const Transactions = () => {
     const [filterData, setFilterData] = useState({ page: 1, limit: 15, start_date: "", status: "", end_date: "" });
 
     const { closeModal, isOpen, openModal } = useModal();
+
+    const { notDesktop } = useWidth()
 
     const { data, isLoading } = useTransactions(filterData);
 
@@ -267,6 +270,7 @@ const Transactions = () => {
             </div>
             <Modal
                 isOpen={isOpen}
+                isFullscreen={notDesktop}
                 onClose={() => {
                     setSelectedTransaction(null);
                     closeModal();

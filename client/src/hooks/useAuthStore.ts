@@ -18,9 +18,10 @@ export const useAuthStore = create<AuthState>((set) => {
     return {
         user,
         login: ({ access_token, refresh_token, user }) => {
-            if (access_token) Cookies.set("access_token", access_token, { expires: 1 });
-            if (refresh_token) Cookies.set("refresh_token", refresh_token, { expires: 1 });
-            if (user) Cookies.set("auth_user", JSON.stringify(user), { expires: 1 });
+            const expires = 0.5; // 12 hours = 0.5 days
+            if (access_token) Cookies.set("access_token", access_token, { expires });
+            if (refresh_token) Cookies.set("refresh_token", refresh_token, { expires });
+            if (user) Cookies.set("auth_user", JSON.stringify(user), { expires });
             set({ user: user ?? null });
         },
         refreshAuth: async () => {

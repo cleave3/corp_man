@@ -177,17 +177,18 @@ class CustomerService:
         result = await self.session.exec(stmt)
         customers = result.fetchall()
 
-        transaction_service = get_transaction_service(session=self.session)
+        # transaction_service = get_transaction_service(session=self.session)
 
-        customers = [
-            {
-                "id": customer.id,
-                "name": f"{customer.first_name} {customer.last_name}",
-                "phone": customer.phone,
-                "balance": await transaction_service.get_wallet_balance(customer.id),
-            }
-            for customer in customers
-        ]
+        # customers = [
+        #     {
+        #         "id": customer.id,
+        #         "name": f"{customer.first_name} {customer.last_name}",
+        #         "phone": customer.phone,
+        #         "customer_code": customer.customer_code,
+        #         "balance": await transaction_service.get_wallet_balance(customer.id),
+        #     }
+        #     for customer in customers
+        # ]
         return customers
 
 

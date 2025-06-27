@@ -256,6 +256,9 @@ class Customer(SQLModel, table=True):
             pg.VARCHAR, nullable=False, default=PaymentFrequencyEnum.monthly.value
         )
     )
+    sms_alert: str = Field(
+        sa_column=Column(pg.VARCHAR, nullable=True, default="YES", server_default="YES")
+    )
     next_payment_date: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, nullable=True, default=datetime.now)
     )

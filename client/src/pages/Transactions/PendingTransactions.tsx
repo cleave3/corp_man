@@ -16,6 +16,7 @@ import { Dropdown } from "../../components/ui/dropdown/Dropdown";
 import { DropdownItem } from "../../components/ui/dropdown/DropdownItem";
 import { MoreDotIcon } from "../../icons";
 import AccessWrapper from "../../components/AccessController";
+import useWidth from "../../hooks/useWidth";
 
 const PendingTransactions = () => {
     const [openDropDown, setOpenDropDown] = useState(false);
@@ -38,7 +39,9 @@ const PendingTransactions = () => {
 
     const { mutate: aMutate } = useApproveTransaction();
     const { mutate: dMutate } = useDeclineTransaction();
-    console.log({ actionParams });
+
+    const { notDesktop } = useWidth();
+
     const handleProcessAction = () => {
         if (actionParams.action === "approve") {
             aMutate(actionParams.id);
@@ -257,6 +260,7 @@ const PendingTransactions = () => {
             </div>
             <Modal
                 isOpen={isOpen}
+                isFullscreen={notDesktop}
                 onClose={() => {
                     setSelectedTransaction(null);
                     closeModal();

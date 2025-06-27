@@ -21,3 +21,10 @@
 - CUSTOMER CODE  [DONE]
 - Monthly Volume per staff [by year and month] [DONE]
 - filter customer by date   [DONE]
+
+ACTION PLAN
+
+- PURCHASE DOMAIN [Blocked, No card]
+- REGISTER CAC [Pending] -> NDPC LICENSE [Pending] -> NCC LICENSE [Pending]
+- AZURE SUBSCRIPTION SPONSORSHIP [Blocked, Not card]
+- REQUIRED AMOUNT TO MVP [Not Need, let's build first]

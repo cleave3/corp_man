@@ -19,6 +19,7 @@ class CustomerCreate(BaseModel):
     )
     customer_code: str = Field(..., max_length=100, examples=["BSDCJKDE"])
     customer_type: str = Field(..., max_length=50, examples=["Premium", "Regular"])
+    sms_alert: Optional[str] = Field(default=None, examples=["YES", "NO"])
     payment_frequency: str = Field(
         default=PaymentFrequencyEnum.monthly.value,
         examples=[PaymentFrequencyEnum.monthly.value],
@@ -43,6 +44,7 @@ class CustomerUpdate(BaseModel):
     customer_type: Optional[str] = Field(
         ..., max_length=100, examples=["Premium", "Regular"]
     )
+    sms_alert: Optional[str] = Field(default=None, examples=["YES", "NO"])
     address: Optional[str] = Field(default=None, examples=["42 Update Avenue, Abuja"])
     payment_frequency: Optional[str] = Field(
         default=None,

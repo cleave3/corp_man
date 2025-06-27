@@ -51,5 +51,6 @@ def decode_access_token(token: str) -> dict:
         logging.exception(e)
         return None
 
+
 def generate_uuid():
     return uuid.uuid4()

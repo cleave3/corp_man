@@ -18,6 +18,7 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
         email: "",
         phone: "",
         address: "",
+        sms_alert: "YES",
         customer_type: "regular",
         customer_code: "",
         payment_frequency: "weekly",
@@ -41,7 +42,8 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
                 next_payment_date: customerToEdit.next_payment_date?.substring(0, 10) || currentDate(),
                 opening_balance: 0,
                 customer_code: customerToEdit?.customer_code || "",
-                customer_type: customerToEdit?.customer_type || "regular"
+                customer_type: customerToEdit?.customer_type || "regular",
+                sms_alert: customerToEdit?.sms_alert || "YES"
             });
         }
     }, [customerToEdit]);
@@ -67,7 +69,8 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
             next_payment_date: "",
             opening_balance: 0,
             customer_code: "",
-            customer_type: "regular"
+            customer_type: "regular",
+            sms_alert: "YES"
         });
         closeModal();
     };
@@ -85,7 +88,8 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
                 payment_frequency: customer.payment_frequency,
                 customer_code: customer.customer_code,
                 customer_type: customer.customer_type,
-                next_payment_date: customer.next_payment_date
+                next_payment_date: customer.next_payment_date,
+                sms_alert: customer.sms_alert,
             };
             um(
                 { customerId: customerToEdit.id, data: editCustomerData },
@@ -231,6 +235,18 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
                                     />
                                 </div>
                             )}
+                            <div className="col-span-2 lg:col-span-1">
+                                <Label>SMS Alert Settings</Label>
+                                <SearchableSelect
+                                    placeholder="Select Alert Settings"
+                                    value={customer.sms_alert}
+                                    onChange={(value) => setCustomer((prev) => ({ ...prev, sms_alert: value }))}
+                                    options={[
+                                        { label: "YES", value: "YES" },
+                                        { label: "NO", value: "NO" }
+                                    ]}
+                                />
+                            </div>
                             <div className="col-span-2">
                                 <Label>Address</Label>
                                 <Input

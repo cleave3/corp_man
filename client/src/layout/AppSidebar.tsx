@@ -144,7 +144,7 @@ const AppSidebar: React.FC = () => {
     const renderMenuItems = (items: NavItem[], menuType: "main" | "others") => (
         <ul className="flex flex-col gap-4">
             {items.map((nav, index) => (
-                <AccessWrapper componentPermissions={nav.componentPermissions}>
+                <AccessWrapper key={index} componentPermissions={nav.componentPermissions}>
                     <li key={nav.name}>
                         {nav.subItems ? (
                             <button
@@ -207,10 +207,11 @@ const AppSidebar: React.FC = () => {
                                 }}
                             >
                                 <ul className="mt-2 space-y-1 ml-9">
-                                    {nav.subItems.map((subItem) => (
-                                        <AccessWrapper>
+                                    {nav.subItems.map((subItem, i) => (
+                                        <AccessWrapper key={i}>
                                             <li key={subItem.name}>
                                                 <Link
+                                                    onClick={isMobile ? toggleMobileSidebar : undefined}
                                                     to={subItem.path}
                                                     className={`menu-dropdown-item ${
                                                         isActive(subItem.path) ? "menu-dropdown-item-active" : "menu-dropdown-item-inactive"
