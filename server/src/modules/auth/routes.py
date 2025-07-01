@@ -217,7 +217,9 @@ async def resend_verification_code(
 
         bg_task.add_task(
             NotificationService.send_email,
-            MailData(recipients=[email], subject="Verification", message=html),
+            recipients=email,
+            subject="Verification",
+            message=html,
         )
     else:
         """send sms"""

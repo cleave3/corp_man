@@ -147,7 +147,26 @@ class AuthService(RedisService):
 
         NotificationService.send_sms(
             telephone=phone,
-            message=f"Hello {user_data.first_name}, your account has been created successfully.\nUsername: {email or phone}\nPassword: {user_data.password}\nPlease keep this information secure.",
+            message=(
+                f"Hello {user_data.first_name}, your account has been created successfully.\n"
+                f"Username: {email or phone}\n"
+                f"Password: {user_data.password}\n"
+                f"Login here: {Config.FRONTEND_URL}\n"
+                "Please keep this information secure."
+            ),
+        )
+
+        NotificationService.send_email(
+            email=email,
+            subject="Welcome to the Team",
+            message=(
+                f"Hello {user_data.first_name},\n\n"
+                f"Your account has been created successfully.\n"
+                f"Username: {email or phone}\n"
+                f"Password: {user_data.password}\n\n"
+                f"You can log in at: {Config.FRONTEND_URL}\n\n"
+                f"Please keep this information secure."
+            ),
         )
 
         self.session.add(new_user)
