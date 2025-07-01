@@ -16,7 +16,7 @@ jobs:
             - name: Set up Python
               uses: actions/setup-python@v5
               with:
-                  python-version: "3.11"
+                  python-version: "3.13"
 
             - name: Install dependencies
               run: |
@@ -27,7 +27,6 @@ jobs:
             - name: Deploy to Azure Web App
               uses: azure/webapps-deploy@v2
               with:
-                  app-name: 'server-health'
+                  app-name: "server-health"
                   publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
                   package: ./server
-                  startup-command: bash startup.sh
