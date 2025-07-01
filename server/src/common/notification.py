@@ -1,4 +1,3 @@
-from typing import List
 import mailtrap as mt
 from src.config import Config
 

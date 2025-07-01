@@ -36,7 +36,6 @@ from src.middleware.dependencies import (
 from src.common.errors import UserNotFound, ActionNotAllowed
 from src.common.permissions import user_permission_actions, user_permission_list
 from src.config.settings import Config
-from src.common.notification import MailData
 
 
 auth_router = APIRouter()

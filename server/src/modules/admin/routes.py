@@ -2,7 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, status, Query
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from src.common.errors import ActionNotAllowed, UserAlreadyExists, UserNotFound
-from src.common.notification import MailData, NotificationService
+from src.common.notification import NotificationService
 from src.common.utilities import generate_random_numbers, response
 from src.config.db import get_session
 from src.middleware.dependencies import get_current_admin, PermissionChecker
