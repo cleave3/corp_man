@@ -89,8 +89,7 @@ export interface UpdateBusinessPreferencesRequest {
 }
 
 export interface CreateCustomerRequest {
-    first_name: string;
-    last_name: string;
+    name: string;
     email: string;
     phone: string;
     image_url?: string;
@@ -201,12 +200,11 @@ export type Business = {
 export type Customer = {
     id: string;
     business_id: string;
-    last_name: string;
     phone: string;
     address: string;
     next_payment_date: string;
     updated_at: string;
-    first_name: string;
+    name: string;
     email: string;
     image_url: string;
     payment_frequency: string;

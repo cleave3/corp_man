@@ -1,17 +1,55 @@
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
+from fastapi.responses import StreamingResponse
 
 from src.middleware.dependencies import PermissionChecker
 from src.common.permissions import user_permission_actions
 from src.common.utilities import response
 
-from .schema import TransactionCreate, TransactionUpdate
+from .schema import TransactionCreate
 from .service import TransactionService, get_transaction_service
 from datetime import datetime
 
 transaction_router = APIRouter()
+
+
+@transaction_router.get(
+    "/download-statement/{customer_id}", status_code=status.HTTP_200_OK
+)
+async def generate_wallet_statement(
+    customer_id: str,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    service: TransactionService = Depends(get_transaction_service),
+    user_data=Depends(
+        PermissionChecker(
+            allowed_permissions=[
+                user_permission_actions["view_transactions"],
+            ]
+        )
+    ),
+):
+    start_dt = datetime.fromisoformat(start_date) if start_date else None
+    if end_date:
+        end_dt = datetime.fromisoformat(end_date)
+        end_dt = end_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+    else:
+        end_dt = None
+
+    result = await service.get_wallet_report_by_customer(
+        business_id=user_data.business_id,
+        customer_id=customer_id,
+        start_date=start_dt,
+        end_date=end_dt,
+    )
+
+    return StreamingResponse(
+        result,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=wallet_statement.pdf"},
+    )
 
 
 @transaction_router.post("", status_code=status.HTTP_201_CREATED)

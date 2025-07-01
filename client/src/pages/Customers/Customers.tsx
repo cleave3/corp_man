@@ -238,7 +238,7 @@ const Customers = () => {
                                                     </span>
                                                 </div>
                                             </div> */}
-                                            {customer?.first_name} {customer?.last_name}{" "}
+                                            {customer?.name}{" "}
                                             {customer?.customer_code ? `(${customer?.customer_code})` : ""}
                                         </TableCell>
                                         {/* <TableCell className="font-bold">{customer?.customer_code ?? "-"}</TableCell> */}
@@ -357,7 +357,7 @@ const Customers = () => {
                                             )} */}
                                             <div>
                                                 <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                                                    {customer?.first_name} {customer?.last_name}
+                                                    {customer?.name}
                                                 </span>
                                                 <span
                                                     className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${

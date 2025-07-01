@@ -273,4 +273,19 @@ export default class ApiService {
         const res = await api.get(`/api/v1/transaction/wallet-history/${customerId}`, { params });
         return res.data;
     }
+
+    static async downloadStatement(customerId: string, params: PaginatedQuery): Promise<void> {
+        const response = await api.get(`/api/v1/transaction/download-statement/${customerId}`, {
+            params,
+            responseType: "blob"
+        });
+        const url = window.URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `statement_${customerId}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode?.removeChild(link);
+        window.URL.revokeObjectURL(url);
+    }
 }

@@ -47,10 +47,10 @@ const NewTransaction = () => {
     const handleConfirmAction = () => {
         if (transaction.transaction_type !== "income") {
             const customer = data?.data?.find?.((c) => c.id === transaction?.meta_data?.customer_id);
-            transaction.meta_data.customer = `${customer.first_name} ${customer.last_name}`;
+            transaction.meta_data.customer = customer.name;
         }
 
-        closeModal()
+        closeModal();
 
         mutate(transaction, {
             onSuccess: async (data) => {
@@ -124,7 +124,7 @@ const NewTransaction = () => {
                                                 value={transaction?.meta_data?.customer_id}
                                                 options={(data?.data || [])?.map((c) => ({
                                                     value: c.id,
-                                                    label: `${c.first_name} ${c.last_name} [${c.customer_code}] - (${c.phone})` // [${formatCurrency(c.balance)}]`
+                                                    label: `${c.name} [${c.customer_code}] - (${c.phone})` // [${formatCurrency(c.balance)}]`
                                                 }))}
                                                 onChange={(value) =>
                                                     setTransaction((prev) => ({

@@ -13,8 +13,7 @@ import Button from "../../components/button/Button";
 
 const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; customerToEdit: Customer }) => {
     const [customer, setCustomer] = useState({
-        first_name: "",
-        last_name: "",
+        name: "",
         email: "",
         phone: "",
         address: "",
@@ -33,8 +32,7 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
     useEffect(() => {
         if (customerToEdit) {
             setCustomer({
-                first_name: customerToEdit.first_name || "",
-                last_name: customerToEdit.last_name || "",
+                name: customerToEdit.name || "",
                 email: customerToEdit.email || "",
                 phone: customerToEdit.phone || "",
                 address: customerToEdit.address || "",
@@ -60,8 +58,7 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
 
     const resetForm = () => {
         setCustomer({
-            first_name: "",
-            last_name: "",
+            name: "",
             email: "",
             phone: "",
             address: "",
@@ -80,8 +77,7 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
 
         if (customerToEdit) {
             const editCustomerData: UpdateCustomerRequest = {
-                first_name: customer.first_name,
-                last_name: customer.last_name,
+                name: customer.name,
                 email: customer.email,
                 phone: customer.phone,
                 address: customer.address,
@@ -128,28 +124,16 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
                     <div className="mt-7">
                         <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                             <div className="col-span-2 lg:col-span-1">
-                                <Label>First Name</Label>
+                                <Label>Customer Name</Label>
                                 <Input
                                     type="text"
-                                    name="first_name"
-                                    value={customer.first_name}
+                                    name="name"
+                                    value={customer.name}
                                     onChange={handleChange}
                                     required
-                                    placeholder="Enter first name"
+                                    placeholder="Enter customer name"
                                 />
                             </div>
-                            <div className="col-span-2 lg:col-span-1">
-                                <Label>Last Name</Label>
-                                <Input
-                                    type="text"
-                                    name="last_name"
-                                    value={customer.last_name}
-                                    onChange={handleChange}
-                                    required
-                                    placeholder="Enter last name"
-                                />
-                            </div>
-
                             <div className="col-span-2 lg:col-span-1">
                                 <Label>Customer Code</Label>
                                 <Input
@@ -171,6 +155,18 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
                                     options={[
                                         { label: "Regular", value: "regular" },
                                         { label: "Premium", value: "premium" }
+                                    ]}
+                                />
+                            </div>
+                            <div className="col-span-2 lg:col-span-1">
+                                <Label>SMS Alert Settings</Label>
+                                <SearchableSelect
+                                    placeholder="Select Alert Settings"
+                                    value={customer.sms_alert}
+                                    onChange={(value) => setCustomer((prev) => ({ ...prev, sms_alert: value }))}
+                                    options={[
+                                        { label: "YES", value: "YES" },
+                                        { label: "NO", value: "NO" }
                                     ]}
                                 />
                             </div>
@@ -235,18 +231,6 @@ const NewCustomer = ({ closeModal, customerToEdit }: { closeModal: StaticFunc; c
                                     />
                                 </div>
                             )}
-                            <div className="col-span-2 lg:col-span-1">
-                                <Label>SMS Alert Settings</Label>
-                                <SearchableSelect
-                                    placeholder="Select Alert Settings"
-                                    value={customer.sms_alert}
-                                    onChange={(value) => setCustomer((prev) => ({ ...prev, sms_alert: value }))}
-                                    options={[
-                                        { label: "YES", value: "YES" },
-                                        { label: "NO", value: "NO" }
-                                    ]}
-                                />
-                            </div>
                             <div className="col-span-2">
                                 <Label>Address</Label>
                                 <Input

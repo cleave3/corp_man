@@ -5,8 +5,7 @@ from src.common.enums import PaymentFrequencyEnum
 
 
 class CustomerCreate(BaseModel):
-    first_name: str = Field(..., max_length=100, examples=["Jane"])
-    last_name: Optional[str] = Field(default=None, max_length=100, examples=["Doe"])
+    name: str = Field(..., max_length=100, examples=["Jane"])
     email: Optional[str] = Field(default=None, examples=["jane.doe@examples.com"])
     phone: Optional[str] = Field(
         default=None, max_length=15, examples=["+2348012345678"]
@@ -31,8 +30,7 @@ class CustomerCreate(BaseModel):
 
 
 class CustomerUpdate(BaseModel):
-    first_name: Optional[str] = Field(default=None, max_length=100, examples=["Jane"])
-    last_name: Optional[str] = Field(default=None, max_length=100, examples=["Smith"])
+    name: Optional[str] = Field(default=None, max_length=100, examples=["Jane"])
     email: Optional[str] = Field(default=None, examples=["jane.smith@examples.com"])
     phone: Optional[str] = Field(
         default=None, max_length=15, examples=["+2348012345678"]

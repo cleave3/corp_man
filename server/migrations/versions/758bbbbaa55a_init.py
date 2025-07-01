@@ -97,7 +97,7 @@ def upgrade() -> None:
     )
     op.create_table('users',
     sa.Column('uid', sa.UUID(), nullable=False),
-    sa.Column('business_id', sa.VARCHAR(), nullable=True),
+    sa.Column('business_id', sa.Uuid(), nullable=True),
     sa.Column('email', sa.VARCHAR(), nullable=True),
     sa.Column('phone', sa.VARCHAR(), nullable=True),
     sa.Column('first_name', sa.VARCHAR(), nullable=True),

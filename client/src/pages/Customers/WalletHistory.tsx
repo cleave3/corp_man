@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { useWalletHistory } from "../../hooks/useApiHooks";
 import { Customer, StaticFunc } from "../../api/types";
 import { Pagination } from "../../components/ui/table";
@@ -6,6 +7,8 @@ import { formatCurrency } from "../../utils";
 import { formatDate } from "../../utils/date";
 import { Drawer } from "../../components/Drawer/Drawer";
 import Input from "../../components/form/input/InputField";
+import { toast } from "react-toastify";
+import ApiService from "../../api/apiService";
 
 const WalletHistory = ({ customer, onClose }: { customer: Customer; onClose: StaticFunc }) => {
     const [filterData, setFilterData] = useState({ page: 1, limit: 15, start_date: "", end_date: "" });
@@ -20,14 +23,24 @@ const WalletHistory = ({ customer, onClose }: { customer: Customer; onClose: Sta
 
     const totalData = data?.data?.total ?? 0;
 
-    console.log("here")
+    const downloadReport = async () => {
+        await toast.promise(
+            async () =>
+                await ApiService.downloadStatement(customer.id, { start_date: filterData.start_date, end_date: filterData.end_date }),
+            {
+                pending: "Generating Statement...",
+                success: "Statement Generated",
+                error: "Error generating report. Try again"
+            }
+        );
+    };
 
     return (
         <Drawer
             title={
                 <div>
                     <h2 className="text-lg font-semibold">
-                        {customer?.first_name} {customer?.first_name} Wallet History
+                        {customer?.name} Wallet History
                     </h2>
 
                     <div className="mt-2">
@@ -72,6 +85,14 @@ const WalletHistory = ({ customer, onClose }: { customer: Customer; onClose: Sta
                             prevFunc={() => setFilterData((prev) => ({ ...prev, page: prev.page - 1 }))}
                         />
                     </div>
+                    <button
+                        type="button"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-bludownloadReporte-700 transition text-sm mt-4"
+                        onClick={downloadReport}
+                    >
+                        <ArrowDownTrayIcon className="size-4" />
+                        Download statement
+                    </button>
                 </div>
             }
             isOpen={true}

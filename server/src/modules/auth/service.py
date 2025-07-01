@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
 from user_agents import parse
 from typing import List
-
+from google.oauth2 import id_token
+from google.auth.transport import requests
 from fastapi import Depends, Request, status
+from src.config.settings import Config
 from src.common.notification import NotificationService
 from src.common.enums import UserTypeEnum
 from src.common.errors import (
@@ -19,10 +21,10 @@ from src.common.errors import (
 )
 from src.config.db import get_session
 from src.config.redis import RedisService
-from src.firebase import verify_id_token
 from src.models import Token, User, Auth, AuthMetaData
 from .schemas import (
     EmailVerificationModel,
+    IDVerificationResponse,
     PasswordResetConfirmModel,
     SocioAuthModel,
     SocioUserCreateModel,
@@ -303,18 +305,38 @@ class AuthService(RedisService):
             "user": {"uid": str(auth.uid)},
         }
 
+    def verify_id_token(self, token: str):
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                token, requests.Request(), Config.OAUTH_CLIENT_ID
+            )
+
+            # Get user info from idinfo
+            user_email = idinfo["email"]
+            name = idinfo.get("name")
+            picture = idinfo.get("picture")
+            sub = idinfo["sub"]  # Google unique user ID
+
+            return IDVerificationResponse(
+                is_valid=True,
+                uid=sub,
+                email=user_email,
+                name=name,
+                image=picture,
+            )
+
+        except Exception as e:
+            return IDVerificationResponse(is_valid=False, error=str(e))
+
     async def socio_authentication(self, data: SocioAuthModel):
-        email = data.email
         id_token = data.id_token
 
-        socio_user = verify_id_token(id_token=id_token)
+        socio_user = self.verify_id_token(token=id_token)
 
         if not socio_user.is_valid:
-            return {
-                "message": socio_user.error,
-                "code": status.HTTP_403_FORBIDDEN,
-                "status": False,
-            }
+            raise BadRequest("Invalid Oauth user")
+
+        email = socio_user.email
 
         user = await self.get_user_by_email(email)
 

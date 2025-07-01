@@ -197,7 +197,6 @@ class ChangePasswordModel(BaseModel):
 
 
 class SocioAuthModel(BaseModel):
-    email: str = Field(max_length=40, examples=["owhiroroeghele@gmail.com"])
     id_token: str = Field(
         description="Access token from firebase",
         examples=[
@@ -246,3 +245,11 @@ class LoginResponse(BaseModel):
 
 class LoginResponseModel(BaseResponseModel):
     data: LoginResponse
+
+class IDVerificationResponse(BaseModel):
+    is_valid: Optional[bool]
+    uid: Optional[str] = None
+    email: Optional[str] = None
+    name: Optional[str] = None
+    image: Optional[str] = None
+    error: Optional[str] = None

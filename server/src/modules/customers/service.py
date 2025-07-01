@@ -38,11 +38,11 @@ class CustomerService:
             data=TransactionCreate(
                 transaction_type="customer_deposit",
                 amount=opening_balance,
-                description=f"Opening balance deposit for {customer.first_name} {customer.last_name or ''}",
+                description=f"Opening balance deposit for {customer.name or ''}",
                 meta_data={
                     "customer_id": str(customer.id),
                     "comment": "opening_deposit",
-                    "customer": f"{customer.first_name} {customer.last_name or ''}",
+                    "customer": f"{customer.name or ''}",
                 },
             ),
         )
@@ -122,8 +122,7 @@ class CustomerService:
 
         if search:
             search_filter = (
-                (Customer.first_name.ilike(f"%{search}%"))
-                | (Customer.last_name.ilike(f"%{search}%"))
+                (Customer.name.ilike(f"%{search}%"))
                 | (Customer.email.ilike(f"%{search}%"))
                 | (Customer.customer_code.ilike(f"%{search}%"))
                 | (Customer.customer_type.ilike(f"%{search}%"))
