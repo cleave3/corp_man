@@ -28,10 +28,10 @@ jobs:
               with:
                   python-version: "3.13"
 
-            # - name: Create and start virtual environment
-            #   run: |
-            #       python -m venv antenv
-            #       source antenv/bin/activate
+            - name: Create and start virtual environment
+              run: |
+                  python -m venv antenv
+                  source antenv/bin/activate
 
             - name: Install dependencies
               run: |
