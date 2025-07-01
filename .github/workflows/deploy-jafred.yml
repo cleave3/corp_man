@@ -42,14 +42,14 @@ jobs:
 
             - name: Zip artifact for deployment
               run: |
-                  zip -r ../release.zip . -x "client/*"
+                  zip -r release.zip . -x "client/*"
 
             - name: Upload artifact for deployment jobs
               uses: actions/upload-artifact@v4
               with:
                   name: python-app
                   path: |
-                      ../release.zip
+                      server/release.zip
                       !antenv/
 
     deploy:
