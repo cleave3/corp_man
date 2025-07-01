@@ -1,34 +1,19 @@
-from typing import List
 import mailtrap as mt
 from src.config import Config
 
 
-class MailData:
-    emails = List[mt.Address]
-    subject: str
-    message: str
-
-    def __init__(self, recipients: List[str], subject: str, message: str):
-        self.subject = subject
-        self.message = message
-        self.emails = []
-
-        for recipient in recipients:
-            self.emails.append(mt.Address(email=recipient))
-
-
 class NotificationService:
     @staticmethod
-    def send_email(data: MailData):
+    def send_email(recipient: str, subject: str, message: str):
         try:
             # create mail object
             mail = mt.Mail(
                 sender=mt.Address(
                     email=Config.MAIL_SENDER_EMAIL, name=Config.MAIL_SENDER_NAME
                 ),
-                to=data.emails,
-                subject=data.subject,
-                html=data.message,
+                to=mt.Address(email=recipient),
+                subject=subject,
+                html=message,
                 # text="Congrats for sending test email with Mailtrap!",
             )
 
