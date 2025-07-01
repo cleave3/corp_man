@@ -120,12 +120,7 @@ class SocioUserCreateModel(BaseModel):
 
 class UserLoginModel(BaseModel):
     email: str = Field(max_length=40, examples=["owhiroroeghele@gmail.com"])
-    password: str = Field(
-        min_length=8,
-        description="Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number.",
-        title="Password",
-        examples=["Cleave@12345"],
-    )
+    password: str = Field(title="Password", examples=["Cleave@12345"])
 
 
 class SendPhoneVerificationCodeModel(BaseModel):
@@ -202,7 +197,6 @@ class ChangePasswordModel(BaseModel):
 
 
 class SocioAuthModel(BaseModel):
-    email: str = Field(max_length=40, examples=["owhiroroeghele@gmail.com"])
     id_token: str = Field(
         description="Access token from firebase",
         examples=[
@@ -251,3 +245,11 @@ class LoginResponse(BaseModel):
 
 class LoginResponseModel(BaseResponseModel):
     data: LoginResponse
+
+class IDVerificationResponse(BaseModel):
+    is_valid: Optional[bool]
+    uid: Optional[str] = None
+    email: Optional[str] = None
+    name: Optional[str] = None
+    image: Optional[str] = None
+    error: Optional[str] = None

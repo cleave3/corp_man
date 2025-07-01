@@ -1,5 +1,6 @@
 import enum
 
+
 class UserTypeEnum(enum.Enum):
     user = "user"
     root = "root"
@@ -25,6 +26,8 @@ class PaymentFrequencyEnum(enum.Enum):
     weekly = "weekly"
     biweekly = "bi-weekly"
     monthly = "monthly"
+    yearly = "yearly"
+
 
 class AssetTypeEnum(enum.Enum):
     equipment = "equipment"
@@ -50,6 +53,7 @@ class AssetStatusEnum(enum.Enum):
     under_maintenance = "under_maintenance"
     retired = "retired"
     other = "other"
+
 
 class TransactionTypeEnum(enum.Enum):
     customer_deposit = "customer_deposit"

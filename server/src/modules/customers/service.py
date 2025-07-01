@@ -38,10 +38,11 @@ class CustomerService:
             data=TransactionCreate(
                 transaction_type="customer_deposit",
                 amount=opening_balance,
-                description=f"Opening balance deposit for {customer.first_name} {customer.last_name or ''}",
+                description=f"Opening balance deposit for {customer.name or ''}",
                 meta_data={
                     "customer_id": str(customer.id),
                     "comment": "opening_deposit",
+                    "customer": f"{customer.name or ''}",
                 },
             ),
         )
@@ -103,14 +104,42 @@ class CustomerService:
         return True
 
     async def paginated_get_customers(
-        self, business_id: Optional[uuid.UUID] = None, page: int = 1, limit: int = 10
+        self,
+        business_id: Optional[uuid.UUID] = None,
+        page: int = 1,
+        limit: int = 10,
+        search: str = None,
+        customer_type: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
     ) -> dict:
         stmt = select(Customer).order_by(Customer.created_at.desc())
+        count_stmt = select(func.count()).select_from(Customer)
+
         if business_id:
             stmt = stmt.where(Customer.business_id == business_id)
-        count_stmt = select(func.count()).select_from(Customer)
-        if business_id:
             count_stmt = count_stmt.where(Customer.business_id == business_id)
+
+        if search:
+            search_filter = (
+                (Customer.name.ilike(f"%{search}%"))
+                | (Customer.email.ilike(f"%{search}%"))
+                | (Customer.customer_code.ilike(f"%{search}%"))
+                | (Customer.customer_type.ilike(f"%{search}%"))
+                | (Customer.phone.ilike(f"%{search}%"))
+            )
+            stmt = stmt.where(search_filter)
+            count_stmt = count_stmt.where(search_filter)
+        if customer_type:
+            stmt = stmt.where(Customer.customer_type == customer_type)
+            count_stmt = count_stmt.where(Customer.customer_type == customer_type)
+        if start_date:
+            stmt = stmt.where(Customer.created_at >= start_date)
+            count_stmt = count_stmt.where(Customer.created_at >= start_date)
+        if end_date:
+            stmt = stmt.where(Customer.created_at <= end_date)
+            count_stmt = count_stmt.where(Customer.created_at <= end_date)
+
         total_result = await self.session.exec(count_stmt)
         total_count = total_result.one()
         stmt = stmt.offset((page - 1) * limit).limit(limit)
@@ -130,7 +159,6 @@ class CustomerService:
                     else {}
                 ),
                 "balance": await transaction_service.get_wallet_balance(customer.id),
-                # "wallet_history": customer.wallet_history,
             }
             for customer in customers
         ]
@@ -140,6 +168,27 @@ class CustomerService:
             "limit": limit,
             "customers": customers,
         }
+
+    async def get_customers(self, business_id: Optional[uuid.UUID] = None) -> dict:
+        stmt = select(Customer).order_by(Customer.created_at.desc())
+        if business_id:
+            stmt = stmt.where(Customer.business_id == business_id)
+        result = await self.session.exec(stmt)
+        customers = result.fetchall()
+
+        # transaction_service = get_transaction_service(session=self.session)
+
+        # customers = [
+        #     {
+        #         "id": customer.id,
+        #         "name": f"{customer.first_name} {customer.last_name}",
+        #         "phone": customer.phone,
+        #         "customer_code": customer.customer_code,
+        #         "balance": await transaction_service.get_wallet_balance(customer.id),
+        #     }
+        #     for customer in customers
+        # ]
+        return customers
 
 
 def get_customer_service(

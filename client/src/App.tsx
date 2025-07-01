@@ -1,66 +1,112 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { Bounce, ToastContainer } from "react-toastify";
 import SignIn from "./pages/AuthPages/SignIn";
-import SignUp from "./pages/AuthPages/SignUp";
-import NotFound from "./pages/OtherPage/NotFound";
-import UserProfiles from "./pages/UserProfiles";
-import Videos from "./pages/UiElements/Videos";
-import Images from "./pages/UiElements/Images";
-import Alerts from "./pages/UiElements/Alerts";
-import Badges from "./pages/UiElements/Badges";
-import Avatars from "./pages/UiElements/Avatars";
-import Buttons from "./pages/UiElements/Buttons";
-import LineChart from "./pages/Charts/LineChart";
-import BarChart from "./pages/Charts/BarChart";
-import Calendar from "./pages/Calendar";
-import BasicTables from "./pages/Tables/BasicTables";
-import FormElements from "./pages/Forms/FormElements";
-import Blank from "./pages/Blank";
+import NotFound from "./pages/NotFound";
+import UserProfiles from "./pages/UserProfile";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
+import { PublicRoute, PrivateRoute } from "./components/RouteWrapper";
+import { menuPermissions, PERMISSION_VALUES, ROUTES } from "./utils";
+import ForgotPassword from "./pages/AuthPages/ForgotPassword";
+import Customers from "./pages/Customers/Customers";
+import Transactions from "./pages/Transactions/Transactions";
+import { useTheme } from "./context/ThemeContext";
+import Settings from "./pages/Settings/Settings";
+import Users from "./pages/Users/Users";
+import PendingTransactions from "./pages/Transactions/PendingTransactions";
+import NewTransaction from "./pages/Transactions/NewTransaction";
+import Metrics from "./pages/Metrics";
 
-export default function App() {
-  return (
-    <>
-      <Router>
-        <ScrollToTop />
-        <Routes>
-          {/* Dashboard Layout */}
-          <Route element={<AppLayout />}>
-            <Route index path="/" element={<Home />} />
+const protected_routes = [
+    {
+        Path: ROUTES.DASHBOARD,
+        element: <PrivateRoute children={<Home />} componentPermissions={menuPermissions("dashboard")} />,
+        isIndex: true
+    },
+    {
+        Path: ROUTES.CUSTOMERS,
+        element: <PrivateRoute children={<Customers />} componentPermissions={menuPermissions("customers")} />,
+        isIndex: false
+    },
+    {
+        Path: ROUTES.ALL_TRANSACTIONS,
+        element: <PrivateRoute children={<Transactions />} componentPermissions={[PERMISSION_VALUES.transaction.view_transactions]} />,
+        isIndex: false
+    },
+    {
+        Path: ROUTES.PENDING_TRANSACTIONS,
+        element: (
+            <PrivateRoute children={<PendingTransactions />} componentPermissions={[PERMISSION_VALUES.transaction.approve_transaction]} />
+        ),
+        isIndex: false
+    },
+    {
+        Path: ROUTES.NEW_TRANSACTIONS,
+        element: <PrivateRoute children={<NewTransaction />} componentPermissions={[PERMISSION_VALUES.transaction.initiate_transaction]} />,
+        isIndex: false
+    },
+    {
+        Path: ROUTES.SETTINGS,
+        element: <PrivateRoute children={<Settings />} componentPermissions={menuPermissions("business")} />,
+        isIndex: false
+    },
+    {
+        Path: ROUTES.USERS,
+        element: <PrivateRoute children={<Users />} componentPermissions={menuPermissions("users")} />,
+        isIndex: false
+    },
+    {
+        Path: ROUTES.PROFILE,
+        element: <PrivateRoute children={<UserProfiles />} />,
+        isIndex: false
+    },
+    {
+        Path: ROUTES.METRICS,
+        element: <PrivateRoute children={<Metrics />} componentPermissions={menuPermissions("metrics")} />,
+        isIndex: false
+    }
+];
 
-            {/* Others Page */}
-            <Route path="/profile" element={<UserProfiles />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/blank" element={<Blank />} />
+const public_routes = [
+    { Path: ROUTES.SIGNIN, element: <PublicRoute children={<SignIn />} /> },
+    { Path: ROUTES.FORGOT_PASSWORD, element: <PublicRoute children={<ForgotPassword />} /> },
+    { Path: "*", element: <PublicRoute children={<NotFound />} /> }
+];
 
-            {/* Forms */}
-            <Route path="/form-elements" element={<FormElements />} />
+const App = () => {
+    const theme = useTheme();
+    return (
+        <>
+            <Router>
+                <ScrollToTop />
+                <Routes>
+                    <Route element={<AppLayout />}>
+                        {protected_routes.map((route, i) => (
+                            <Route key={i} index={route.isIndex} path={route.Path} element={route.element} />
+                        ))}
+                    </Route>
+                    {public_routes.map((route, i) => (
+                        <Route key={i} path={route.Path} element={route.element} />
+                    ))}
+                </Routes>
+            </Router>
+            <ToastContainer
+                position="bottom-center"
+                style={{ zIndex: 999999999 }}
+                autoClose={5000}
+                hideProgressBar
+                newestOnTop
+                closeOnClick={true}
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme={theme.theme}
+                transition={Bounce}
+            />
+        </>
+    );
+};
 
-            {/* Tables */}
-            <Route path="/basic-tables" element={<BasicTables />} />
-
-            {/* Ui Elements */}
-            <Route path="/alerts" element={<Alerts />} />
-            <Route path="/avatars" element={<Avatars />} />
-            <Route path="/badge" element={<Badges />} />
-            <Route path="/buttons" element={<Buttons />} />
-            <Route path="/images" element={<Images />} />
-            <Route path="/videos" element={<Videos />} />
-
-            {/* Charts */}
-            <Route path="/line-chart" element={<LineChart />} />
-            <Route path="/bar-chart" element={<BarChart />} />
-          </Route>
-
-          {/* Auth Layout */}
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
-
-          {/* Fallback Route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
-    </>
-  );
-}
+export default App;

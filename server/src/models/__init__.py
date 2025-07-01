@@ -245,8 +245,7 @@ class Customer(SQLModel, table=True):
         sa_column=Column(pg.UUID, nullable=False, primary_key=True, default=uuid.uuid4)
     )
     business_id: uuid.UUID = Field(default=None, foreign_key="businesses.id")
-    first_name: str = Field(sa_column=Column(pg.VARCHAR, nullable=False))
-    last_name: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
+    name: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
     email: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
     phone: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
     image_url: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
@@ -256,6 +255,9 @@ class Customer(SQLModel, table=True):
             pg.VARCHAR, nullable=False, default=PaymentFrequencyEnum.monthly.value
         )
     )
+    sms_alert: str = Field(
+        sa_column=Column(pg.VARCHAR, nullable=True, default="YES", server_default="YES")
+    )
     next_payment_date: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, nullable=True, default=datetime.now)
     )
@@ -263,6 +265,8 @@ class Customer(SQLModel, table=True):
         back_populates="customer",
         sa_relationship_kwargs={"lazy": "selectin"},
     )
+    customer_type: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
+    customer_code: str = Field(sa_column=Column(pg.VARCHAR, nullable=True))
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
     updated_at: datetime = Field(
         sa_column=Column(pg.TIMESTAMP, default=datetime.now, onupdate=datetime.now)

@@ -46,9 +46,13 @@ admin_permission_list = {
 user_permission_actions = {
     "dashboard_overview": "dashboard.overview",
     "dashboard_revenue": "dashboard.revenue",
-    "dashboard_target": "dashboard.target",
+    "dashboard_payouts": "dashboard.payouts",
+    "dashboard_chart": "dashboard.chart",
+    "dashboard_customers": "dashboard.customers",
+    "dashboard_collections": "dashboard.collections",
+    "dashboard_balances": "dashboard.customer_balances",
+    "dashboard_staffs": "dashboard.staffs",
     "dashboard_due_payments": "dashboard.due_payments",
-    "dashboard_notifications": "dashboard.notifications",
     "dashboard_pending": "dashboard.pending",
     "view_users": "user.view",
     "update_user": "user.update",
@@ -68,21 +72,54 @@ user_permission_actions = {
     "approve_transaction": "transaction.approve",
     "view_settings": "settings.view",
     "modify_settings": "settings.modify",
+    "staff_performance": "metrics.staff_performance",
 }
 
 user_permission_list = {
-    "business": [
+    "dashboard": [
+        # {
+        #     "name": "view overview",
+        #     "action": user_permission_actions["dashboard_overview"],
+        # },
         {
-            "name": "view business information",
-            "action": user_permission_actions["view_business"],
+            "name": "view payouts",
+            "action": user_permission_actions["dashboard_payouts"],
         },
         {
-            "name": "update business information",
-            "action": user_permission_actions["update_business"],
+            "name": "view collections",
+            "action": user_permission_actions["dashboard_collections"],
         },
         {
-            "name": "update business preferences",
-            "action": user_permission_actions["update_business_preferences"],
+            "name": "view charts",
+            "action": user_permission_actions["dashboard_chart"],
+        },
+        {
+            "name": "view customers",
+            "action": user_permission_actions["dashboard_customers"],
+        },
+        {
+            "name": "view balances",
+            "action": user_permission_actions["dashboard_balances"],
+        },
+        {
+            "name": "view revenue",
+            "action": user_permission_actions["dashboard_revenue"],
+        },
+        {
+            "name": "view staffs",
+            "action": user_permission_actions["dashboard_staffs"],
+        },
+        # {
+        #     "name": "view due payments",
+        #     "action": user_permission_actions["dashboard_due_payments"],
+        # },
+        # {
+        #     "name": "view notifications",
+        #     "action": user_permission_actions["dashboard_notifications"],
+        # },
+        {
+            "name": "view pending transactions",
+            "action": user_permission_actions["dashboard_pending"],
         },
     ],
     "customers": [
@@ -101,37 +138,18 @@ user_permission_list = {
         },
         {"name": "view balances", "action": user_permission_actions["view_balances"]},
     ],
-    "dashboard": [
+    "business": [
         {
-            "name": "view overview",
-            "action": user_permission_actions["dashboard_overview"],
+            "name": "view business information",
+            "action": user_permission_actions["view_business"],
         },
         {
-            "name": "view revenue",
-            "action": user_permission_actions["dashboard_revenue"],
+            "name": "update business information",
+            "action": user_permission_actions["update_business"],
         },
         {
-            "name": "view target",
-            "action": user_permission_actions["dashboard_target"],
-        },
-        {
-            "name": "view due payments",
-            "action": user_permission_actions["dashboard_due_payments"],
-        },
-        {
-            "name": "view notifications",
-            "action": user_permission_actions["dashboard_notifications"],
-        },
-        {
-            "name": "view pending transactions",
-            "action": user_permission_actions["dashboard_pending"],
-        },
-    ],
-    "settings": [
-        {"name": "View settings", "action": user_permission_actions["view_settings"]},
-        {
-            "name": "Modify settings",
-            "action": user_permission_actions["modify_settings"],
+            "name": "update business preferences",
+            "action": user_permission_actions["update_business_preferences"],
         },
     ],
     "transaction": [
@@ -144,45 +162,33 @@ user_permission_list = {
             "action": user_permission_actions["initiate_transaction"],
         },
         {
-            "name": "Approve transactions",
+            "name": "approve transactions",
             "action": user_permission_actions["approve_transaction"],
         },
         {
-            "name": "Modify transactions",
+            "name": "modify transactions",
             "action": user_permission_actions["modify_transaction"],
         },
     ],
-    "user": [
+    "team": [
         {"name": "update user", "action": user_permission_actions["update_user"]},
         {"name": "create user", "action": user_permission_actions["create_user"]},
         {"name": "view user", "action": user_permission_actions["view_users"]},
         {"name": "delete user", "action": user_permission_actions["delete_user"]},
     ],
+    "settings": [
+        {"name": "view settings", "action": user_permission_actions["view_settings"]},
+        {
+            "name": "modify settings",
+            "action": user_permission_actions["modify_settings"],
+        },
+    ],
+    "metrics": [
+        {
+            "name": "staff performance",
+            "action": user_permission_actions["staff_performance"],
+        },
+    ],
 }
 
-root_user_permissions = [
-    "dashboard.overview",
-    "dashboard.revenue",
-    "dashboard.target",
-    "dashboard.due_payments",
-    "dashboard.notifications",
-    "dashboard.pending",
-    "user.view",
-    "user.update",
-    "user.create",
-    "user.delete",
-    "customer.view",
-    "customer.update",
-    "customer.create",
-    "customer.delete",
-    "customer.view_balances",
-    "business.update",
-    "business.view",
-    "business.update_preferences",
-    "transaction.view",
-    "transaction.initiate",
-    "transaction.approve",
-    "settings.view",
-    "settings.modify",
-    "transaction.modify",
-]
+# root_user_permissions = list(user_permission_actions.values())

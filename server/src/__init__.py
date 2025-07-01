@@ -51,10 +51,11 @@ app.include_router(
                 allowed_permissions=[
                     user_permission_actions["dashboard_overview"],
                     user_permission_actions["dashboard_revenue"],
-                    user_permission_actions["dashboard_target"],
                     user_permission_actions["dashboard_due_payments"],
                     user_permission_actions["dashboard_pending"],
-                    user_permission_actions["dashboard_notifications"],
+                    user_permission_actions["dashboard_chart"],
+                    user_permission_actions["dashboard_customers"],
+                    user_permission_actions["dashboard_payouts"],
                 ]
             )
         )

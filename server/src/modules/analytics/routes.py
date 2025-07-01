@@ -3,6 +3,7 @@ from fastapi import APIRouter, status, Depends, Query
 from src.modules.analytics.service import get_analytics_service
 from src.common.utilities import response
 from .service import AnalyticsService
+from datetime import datetime
 
 analytics_router = APIRouter()
 
@@ -18,16 +19,18 @@ async def get_overview_stats(
 
 @analytics_router.get("/transactions-initiator-stats", status_code=status.HTTP_200_OK)
 async def get_transactions_count_by_initiator(
+    month: int = Query(default=datetime.now().month),
+    year: int = Query(default=datetime.now().year),
     analytics_service: AnalyticsService = Depends(get_analytics_service),
 ):
-    stats = await analytics_service.get_transactions_count_by_initiator()
+    stats = await analytics_service.get_transactions_count_by_initiator(month=month, year=year)
 
     return response(data=stats)
 
 
 @analytics_router.get("/transaction-year-stats", status_code=status.HTTP_200_OK)
 async def get_transactions_amount_by_filter(
-    year: int = Query(2025, ge=2025),
+    year: int = Query(2025),
     analytics_service: AnalyticsService = Depends(get_analytics_service),
 ):
     stats = await analytics_service.get_transactions_amount_by_filter(year=year)

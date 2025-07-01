@@ -5,6 +5,8 @@ from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from fastapi import Depends
 
+from src.common.notification import NotificationService
+from src.modules.business.service import get_business_service
 from src.common.utilities import calculate_next_payment_date
 from src.common.enums import TransactionStatusEnum, TransactionTypeEnum
 from src.common.errors import BadRequest, CustomerNotFound, TransactionNotFound
@@ -12,6 +14,12 @@ from src.config.db import get_session
 from src.models import Customer, Transaction, TransactionApproval, Wallet
 
 from .schema import TransactionCreate
+from io import BytesIO
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.units import mm
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 
 
 class TransactionService:
@@ -114,14 +122,26 @@ class TransactionService:
 
     async def paginated_get_transactions(
         self,
+        page,
+        limit,
         business_id: Optional[uuid.UUID] = None,
         status: Optional[str] = None,
         description: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        page: int = 1,
-        limit: int = 10,
     ):
+        if not page or not limit:
+            stmt = select(Transaction).where(Transaction.status == status)
+            result = await self.session.exec(stmt)
+            transactions = result.fetchall()
+
+            return {
+                "transactions": [
+                    await self._format_response(transaction)
+                    for transaction in transactions
+                ]
+            }
+
         offset = (page - 1) * limit
         stmt = select(Transaction)
         count_stmt = select(func.count()).select_from(Transaction)
@@ -214,7 +234,7 @@ class TransactionService:
                 datetime.strptime(submitted_next_payment, "%Y-%m-%d")
                 if submitted_next_payment
                 else calculate_next_payment_date(
-                    next_payment_date=customer.next_payment_date,
+                    current_date=customer.next_payment_date,
                     frequency=customer.payment_frequency,
                 )
             )
@@ -235,14 +255,33 @@ class TransactionService:
                 else 0.0
             )
 
+            await self._insert_into_wallet(
+                customer_id=customer_id,
+                credit=credit,
+                debit=debit,
+                description=transaction.description,
+            )
+
         await self.session.commit()
 
-        await self._insert_into_wallet(
-            customer_id=customer_id,
-            credit=credit,
-            debit=debit,
-            description=transaction.description,
-        )
+        if customer.sms_alert == "YES":
+            from src.common.utilities import (
+                send_sms,
+            )  # Ensure you have a send_sms utility
+
+            amount = transaction.amount
+            txn_type = (
+                "credit"
+                if transaction.transaction_type
+                == TransactionTypeEnum.customer_deposit.value
+                else "debit"
+            )
+            balance = await self.get_wallet_balance(customer.id)
+            message = (
+                f"Transaction Alert: {txn_type.title()} of NGN {amount:,.2f} "
+                f"on your account. New balance: NGN {balance:,.2f}."
+            )
+            NotificationService.send_sms(telephone=customer.phone, message=message)
 
         return await self._format_response(transaction)
 
@@ -268,31 +307,29 @@ class TransactionService:
         page: int = 1,
         limit: int = 10,
     ):
+        offset = (page - 1) * limit
         stmt = select(Wallet).where(Wallet.customer_id == customer_id)
+        count_stmt = (
+            select(func.count())
+            .select_from(Wallet)
+            .where(Wallet.customer_id == customer_id)
+        )
         if start_date:
             stmt = stmt.where(Wallet.created_at >= start_date)
+            count_stmt = count_stmt.where(Wallet.created_at >= start_date)
         if end_date:
             stmt = stmt.where(Wallet.created_at <= end_date)
+            count_stmt = count_stmt.where(Wallet.created_at <= end_date)
 
         # Use func.count for total
-        count_stmt = select(func.count()).select_from(stmt.subquery())
-        total_result = await self.session.exec(count_stmt)
-        total = total_result.one() or 0
-
-        stmt = stmt.offset((page - 1) * limit).limit(limit)
+        stmt = stmt.offset(offset).limit(limit).order_by(Wallet.created_at.desc())
         result = await self.session.exec(stmt)
+        count_result = await self.session.exec(count_stmt)
         wallets = result.fetchall()
-
-        wallets = [
-            {
-                **wallet.model_dump(),
-                "balance": await self.get_wallet_balance(wallet.customer_id),
-            }
-            for wallet in wallets
-        ]
+        total_count = count_result.one()
 
         return {
-            "total": total,
+            "total": total_count,
             "page": page,
             "limit": limit,
             "wallet_history": wallets,
@@ -334,6 +371,174 @@ class TransactionService:
         total_debit = debit_result.first() or 0.0
 
         return total_credit - total_debit
+
+    async def get_wallet_report_by_customer(
+        self,
+        customer_id: uuid.UUID,
+        business_id: uuid.UUID,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ):
+        stmt = select(Wallet).where(Wallet.customer_id == customer_id)
+        if start_date:
+            stmt = stmt.where(Wallet.created_at >= start_date)
+        if end_date:
+            stmt = stmt.where(Wallet.created_at <= end_date)
+
+        result = await self.session.exec(stmt)
+        wallets = result.fetchall()
+
+        business_service = get_business_service(session=self.session)
+
+        business = await business_service.get_business_by_id(business_id=business_id)
+
+        business_name = ""
+        business_address = ""
+        business_regno = ""
+        business_email = ""
+        business_phone = ""
+
+        if business:
+            business_name = business.business_name
+            business_address = business.business_address
+            business_regno = business.business_reg_no
+            business_email = business.business_email
+            business_phone = business.business_phone
+
+        result = await self.session.exec(
+            select(Customer).where(Customer.id == customer_id)
+        )
+
+        customer = result.first()
+
+        def generate_wallet_statement_pdf(
+            wallets,
+            start_date=None,
+            end_date=None,
+        ):
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(
+                buffer,
+                pagesize=A4,
+                rightMargin=20,
+                leftMargin=20,
+                topMargin=30,
+                bottomMargin=20,
+            )
+            styles = getSampleStyleSheet()
+            elements = []
+
+            # Header
+            elements.append(
+                Paragraph(f"<b>{business_name}</b>", styles["Title"], bulletText=None)
+            )
+            elements[-1].style.alignment = 0  # 0 = TA_LEFT in reportlab
+            elements.append(Paragraph(f"{business_address}", styles["Normal"]))
+            elements.append(Paragraph(f"Reg No: {business_regno}", styles["Normal"]))
+            elements.append(
+                Paragraph(
+                    f"<b>Email</b>: {business_email} | <b>Phone</b>: {business_phone}",
+                    styles["Normal"],
+                )
+            )
+            elements.append(Spacer(1, 12))
+
+            # Customer details (aligned right)
+            if customer:
+                elements.append(
+                    Paragraph(
+                        f"<b>CUSTOMER INFORMATION</b>",
+                        styles["Normal"],
+                        bulletText=None,
+                    )
+                )
+                customer_details = (
+                    f"<b>Name:</b> {customer.name}<br/>"
+                    f"<b>Type:</b> {getattr(customer, 'customer_type', '')}<br/>"
+                    f"<b>Code:</b> {getattr(customer, 'customer_code', '')}"
+                )
+                para = Paragraph(customer_details, styles["Normal"])
+                # para.style.alignment = 2  # 2 = TA_RIGHT in reportlab
+                elements.append(para)
+                elements.append(Spacer(1, 8))
+
+            # Statement period
+            if start_date or end_date:
+                period = "Statement Period: "
+                if start_date:
+                    period += f"{start_date.strftime('%d %b %Y')}"
+                else:
+                    period += "N/A"
+                period += " - "
+                if end_date:
+                    period += f"{end_date.strftime('%d %b %Y')}"
+                else:
+                    period += "N/A"
+                elements.append(Paragraph(period, styles["Normal"]))
+                elements.append(Spacer(1, 8))
+
+            # Table header
+            data = [["Date", "Credit", "Debit", "Description"]]
+            total_credit = 0.0
+            total_debit = 0.0
+            credit_count = 0
+            debit_count = 0
+
+            for wallet in wallets:
+                credit = wallet.credit or 0.0
+                debit = wallet.debit or 0.0
+                desc = wallet.description or ""
+                created = wallet.created_at.strftime("%d %b %Y %-I:%M%p").lower()
+                data.append(
+                    [
+                        created,
+                        f"{credit:,.2f}" if credit else "-",
+                        f"{debit:,.2f}" if debit else "-",
+                        desc,
+                    ]
+                )
+                if credit:
+                    total_credit += credit
+                    credit_count += 1
+                if debit:
+                    total_debit += debit
+                    debit_count += 1
+
+            # Table
+            table = Table(data, colWidths=[40 * mm, 30 * mm, 30 * mm, 90 * mm])
+            table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+                        ("ALIGN", (2, 1), (3, -1), "LEFT"),
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, 0), 11),
+                        ("FONTSIZE", (0, 1), (-1, -1), 10),
+                        ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+                        ("WORDWRAP", (0, 0), (-1, -1), "CJK"),
+                    ]
+                )
+            )
+
+            # Summary
+            summary = (
+                f"<b>Total Credits:</b> {credit_count} ({total_credit:,.2f}) | "
+                f"<b>Total Debits:</b> {debit_count} ({total_debit:,.2f})"
+            )
+            # elements.append(Spacer(1, 12))
+            elements.append(Paragraph(summary, styles["Normal"]))
+            elements.append(Spacer(1, 12))
+            elements.append(table)
+            elements.append(Spacer(1, 12))
+
+            doc.build(elements)
+            buffer.seek(0)
+
+            return buffer
+
+        return generate_wallet_statement_pdf(wallets, start_date, end_date)
 
 
 def get_transaction_service(

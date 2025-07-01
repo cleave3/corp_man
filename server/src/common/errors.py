@@ -272,7 +272,7 @@ def register_all_errors(app: FastAPI):
     app.add_exception_handler(
         InsufficientPermission,
         create_exception_handler(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_403_FORBIDDEN,
             message="You do not have enough permissions to perform this action",
         ),
     )
@@ -353,7 +353,7 @@ def register_all_errors(app: FastAPI):
     app.add_exception_handler(
         InvalidPassword,
         create_exception_handler(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_400_BAD_REQUEST,
             message="Your current password doesn't match",
         ),
     )

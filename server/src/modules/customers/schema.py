@@ -5,8 +5,7 @@ from src.common.enums import PaymentFrequencyEnum
 
 
 class CustomerCreate(BaseModel):
-    first_name: str = Field(..., max_length=100, examples=["Jane"])
-    last_name: Optional[str] = Field(default=None, max_length=100, examples=["Doe"])
+    name: str = Field(..., max_length=100, examples=["Jane"])
     email: Optional[str] = Field(default=None, examples=["jane.doe@examples.com"])
     phone: Optional[str] = Field(
         default=None, max_length=15, examples=["+2348012345678"]
@@ -17,6 +16,9 @@ class CustomerCreate(BaseModel):
     address: Optional[str] = Field(
         default=None, examples=["23 Freedom Street, Lagos, Nigeria"]
     )
+    customer_code: str = Field(..., max_length=100, examples=["BSDCJKDE"])
+    customer_type: str = Field(..., max_length=50, examples=["Premium", "Regular"])
+    sms_alert: Optional[str] = Field(default=None, examples=["YES", "NO"])
     payment_frequency: str = Field(
         default=PaymentFrequencyEnum.monthly.value,
         examples=[PaymentFrequencyEnum.monthly.value],
@@ -28,8 +30,7 @@ class CustomerCreate(BaseModel):
 
 
 class CustomerUpdate(BaseModel):
-    first_name: Optional[str] = Field(default=None, max_length=100, examples=["Jane"])
-    last_name: Optional[str] = Field(default=None, max_length=100, examples=["Smith"])
+    name: Optional[str] = Field(default=None, max_length=100, examples=["Jane"])
     email: Optional[str] = Field(default=None, examples=["jane.smith@examples.com"])
     phone: Optional[str] = Field(
         default=None, max_length=15, examples=["+2348012345678"]
@@ -37,6 +38,11 @@ class CustomerUpdate(BaseModel):
     image_url: Optional[str] = Field(
         default=None, examples=["https://examples.com/images/jane_updated.jpg"]
     )
+    customer_code: Optional[str] = Field(..., max_length=100, examples=["BSDCJKDE"])
+    customer_type: Optional[str] = Field(
+        ..., max_length=100, examples=["Premium", "Regular"]
+    )
+    sms_alert: Optional[str] = Field(default=None, examples=["YES", "NO"])
     address: Optional[str] = Field(default=None, examples=["42 Update Avenue, Abuja"])
     payment_frequency: Optional[str] = Field(
         default=None,

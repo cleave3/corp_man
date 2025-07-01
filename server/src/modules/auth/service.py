@@ -1,11 +1,15 @@
 from datetime import datetime, timedelta
 from user_agents import parse
 from typing import List
-
+from google.oauth2 import id_token
+from google.auth.transport import requests
 from fastapi import Depends, Request, status
+from src.config.settings import Config
+from src.common.notification import NotificationService
 from src.common.enums import UserTypeEnum
 from src.common.errors import (
     AccountNotVerified,
+    BadRequest,
     InvalidCredentials,
     InvalidPassword,
     InvalidToken,
@@ -17,10 +21,10 @@ from src.common.errors import (
 )
 from src.config.db import get_session
 from src.config.redis import RedisService
-from src.firebase import verify_id_token
 from src.models import Token, User, Auth, AuthMetaData
 from .schemas import (
     EmailVerificationModel,
+    IDVerificationResponse,
     PasswordResetConfirmModel,
     SocioAuthModel,
     SocioUserCreateModel,
@@ -35,7 +39,7 @@ from .utils import (
 )
 
 # from .utils import get_password_hash
-from sqlmodel import select
+from sqlmodel import asc, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 
@@ -63,19 +67,34 @@ class AuthService(RedisService):
 
     async def get_users_by_business_id(self, business_id: str) -> List[Auth]:
         users = await self.session.exec(
-            select(Auth).where(Auth.business_id == business_id)
+            select(Auth).where(Auth.business_id == business_id).order_by(asc(Auth.name))
         )
-        return users.fetchall()
+        result = users.fetchall()
+
+        users_list = []
+        for user in result:
+            profile = await self.get_profile_by_uid(uid=user.uid)
+            if profile is not None:
+                user_dict = {
+                    **user.model_dump(),
+                    **profile.model_dump(exclude="password_hash"),
+                }
+                users_list.append(user_dict)
+        return users_list
 
     async def check_if_user_is_unique_user(self, email: str, phone: str) -> User | None:
-        email_exist = await self.get_user_by_email(email=email)
 
-        if email_exist:
-            raise UserAlreadyExists()
-        phone_exist = await self.get_user_by_phone(phone=phone)
+        if email:
+            email_exist = await self.get_user_by_email(email=email)
 
-        if phone_exist:
-            raise UserPhoneAlreadyExists()
+            if email_exist:
+                raise UserAlreadyExists()
+
+        if phone:
+            phone_exist = await self.get_user_by_phone(phone=phone)
+
+            if phone_exist:
+                raise UserPhoneAlreadyExists()
 
     async def get_profile_by_uid(self, uid: str) -> User | None:
         user = await self.session.exec(select(User).where(User.uid == uid))
@@ -91,8 +110,8 @@ class AuthService(RedisService):
         user_data: UserCreateModel,
     ) -> Auth:
 
-        email = user_data.email
-        phone = user_data.phone
+        email = user_data.email or None
+        phone = user_data.phone or None
 
         await self.check_if_user_is_unique_user(email=email, phone=phone)
 
@@ -124,6 +143,11 @@ class AuthService(RedisService):
             business_id=business_id,
             phone=phone,
             permissions=user_data.permissions,
+        )
+
+        NotificationService.send_sms(
+            telephone=phone,
+            message=f"Hello {user_data.first_name}, your account has been created successfully.\nUsername: {email or phone}\nPassword: {user_data.password}\nPlease keep this information secure.",
         )
 
         self.session.add(new_user)
@@ -278,24 +302,41 @@ class AuthService(RedisService):
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
-            "user": {
-                "uid": str(auth.uid),
-                "email": email,
-            },
+            "user": {"uid": str(auth.uid)},
         }
 
+    def verify_id_token(self, token: str):
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                token, requests.Request(), Config.OAUTH_CLIENT_ID
+            )
+
+            # Get user info from idinfo
+            user_email = idinfo["email"]
+            name = idinfo.get("name")
+            picture = idinfo.get("picture")
+            sub = idinfo["sub"]  # Google unique user ID
+
+            return IDVerificationResponse(
+                is_valid=True,
+                uid=sub,
+                email=user_email,
+                name=name,
+                image=picture,
+            )
+
+        except Exception as e:
+            return IDVerificationResponse(is_valid=False, error=str(e))
+
     async def socio_authentication(self, data: SocioAuthModel):
-        email = data.email
         id_token = data.id_token
 
-        socio_user = verify_id_token(id_token=id_token)
+        socio_user = self.verify_id_token(token=id_token)
 
         if not socio_user.is_valid:
-            return {
-                "message": socio_user.error,
-                "code": status.HTTP_403_FORBIDDEN,
-                "status": False,
-            }
+            raise BadRequest("Invalid Oauth user")
+
+        email = socio_user.email
 
         user = await self.get_user_by_email(email)
 
@@ -343,6 +384,11 @@ class AuthService(RedisService):
 
         if not user.has_password:
             raise InvalidPassword()
+
+        if verify_password(new_password, user.password_hash):
+            raise BadRequest(
+                "Your new password can not be the same as your current password"
+            )
 
         if not verify_password(current_password, user.password_hash):
             raise InvalidPassword()
